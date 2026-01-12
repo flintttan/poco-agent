@@ -1,0 +1,44 @@
+from datetime import datetime
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class TaskConfig(BaseModel):
+    """Task configuration."""
+
+    repo_url: str | None = None
+    git_branch: str = "main"
+    mcp_config: dict = Field(default_factory=dict)
+    skill_files: dict = Field(default_factory=dict)
+
+
+class SessionCreateRequest(BaseModel):
+    """Request to create a session."""
+
+    user_id: str
+    config: TaskConfig | None = None
+
+
+class SessionUpdateRequest(BaseModel):
+    """Request to update a session."""
+
+    status: str | None = None
+    sdk_session_id: str | None = None
+    workspace_archive_url: str | None = None
+
+
+class SessionResponse(BaseModel):
+    """Session response."""
+
+    id: UUID
+    user_id: str
+    sdk_session_id: str | None
+    config_snapshot: dict[str, Any] | None
+    workspace_archive_url: str | None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
