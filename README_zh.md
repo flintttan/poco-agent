@@ -1,52 +1,114 @@
+<div align="center">
+  <img src="assets/logo.png" alt="OpenCoWork Logo" width="200" height="200">
+
 # OpenCoWork
 
-OpenCoWork 是一个云端 AI 智能体执行平台，灵感来自 Anthropic 的 [Cowork](https://claude.ai/code)。它协调 Claude AI 智能体在分布式云环境中执行各类自主任务，包括整理文件、撰写文档、分析数据等。
+**云端 AI 智能体执行平台**
+
+[![License: MIT](https://img.shield.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.12+](https://img.shield.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Next.js](https://img.shield.io/badge/Next.js-16-black)](https://nextjs.org/)
+[![FastAPI](https://img.shield.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
+
+[English](./README.md) | [中文](./README_zh.md)
+
+</div>
+
+---
+
+## 简介
+
+OpenCoWork 是一个云端 AI 智能体执行平台，灵感来自 Anthropic 的 [Cowork](https://claude.ai/code)。它通过编排 Claude AI 智能体，在分布式云环境中自主执行各类任务——从代码编写到文件整理、文档撰写、数据分析等。
 
 ## 什么是 Cowork？
 
-当 Anthropic 推出 Claude Code（AI 编程助手）时，他们发现了一个意料之外的现象：开发者们不仅仅用它来写代码，还用它来整理资料、撰写文档、生成报告、分析数据，甚至将其视为处理各类工作的"数字同事"。
+当 Anthropic 推出 Claude Code（AI 编程助手）时，他们发现了一个意想不到的现象：开发者们不仅用它来写代码，还用它来整理资料、撰写文档、生成报告、分析数据，甚至将其视为处理各类工作的"数字同事"。
 
-这一洞察催生了 **Cowork**，它将 Claude 的能力从"对话助手"扩展为"数字同事"。与仅仅响应提示的传统对话式 AI 不同，Cowork 具有以下特点：
+这一洞察催生了 **Cowork**——一款将 Claude 从"聊天助手"升级为"数字同事"的产品。与仅能回复提示的传统对话式 AI 不同，Cowork 具备以下特点：
 
-- **自主执行任务** - Claude 自行规划、执行，并持续同步进度
-- **操作真实文件** - 获得用户授权后，可直接访问、读取、编辑和创建文件
-- **并行处理工作** - 可排队多个任务，无需等待完成
-- **保持用户控制** - 执行任何重要操作前都会请求确认
+- **自主执行任务** — Claude 持续规划、执行并同步进度
+- **操作真实文件** — 获得授权后，可直接访问、读取、编辑和创建文件
+- **并行工作** — 可排队处理多个任务，无需等待完成
+- **保持控制权** — 执行重要操作前会先确认
 
-OpenCoWork 将这种强大的协作模式带到云端，让团队能够规模化部署 AI 智能体。
+OpenCoWork 将这一强大的协作范式带入云端，让团队能够规模化部署 AI 智��体。
 
-## 概述
+## 核心特性
 
-OpenCoWork 超越了简单的对话，将 Claude 嵌入到你的实际工作环境中。无论是整理杂乱的下载文件夹、从截图中提取数据、将会议笔记整理成报告，还是自动化浏览器工作流，OpenCoWork 都能像给能干的同事分配任务一样处理。
+- 🚀 **自主任务执行** — 智能体独立规划和执行复杂任务
+- 📁 **真实文件操作** — 在授权控制下直接访问工作空间文件
+- 🔄 **并行处理** — 同时排队和执行多个任务
+- 🎯 **进度追踪** — 实时状态更新和执行监控
+- 🔌 **可扩展架构** — 基于钩子的插件系统，支持自定义
 
-## 架构
+## 系统架构
 
-```
-                    ┌─────────────────┐
-                    │    Frontend     │
-                    │   (Next.js)     │
-                    └────────┬────────┘
-                             │
-                    ┌────────▼────────┐
-                    │  Executor Mgr   │
-                    │ (APScheduler)   │
-                    └────────┬────────┘
-                             │
-        ┌────────────────────┼────────────────────┐
-        │                    │                    │
-┌───────▼───────┐    ┌──────▼──────┐    ┌───────▼──────┐
-│   Backend     │    │  Executor   │    │   Database   │
-│   (FastAPI)   │◄───┤  (FastAPI)  │    │ (PostgreSQL) │
-└───────────────┘    └─────────────┘    └──────────────┘
-```
+OpenCoWork 由四个核心服务协同工作：
+
+| 服务           | 技术                 | 用途                   |
+| -------------- | -------------------- | ---------------------- |
+| **前端**       | Next.js 16, React 19 | 任务管理 Web 界面      |
+| **后端**       | FastAPI, SQLAlchemy  | API 服务器与数据库编排 |
+| **执行器**     | claude-agent-sdk     | 智能体执行引擎         |
+| **执行管理器** | APScheduler          | 任务调度与分发         |
 
 ## 技术栈
 
-- **前端：** Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui
-- **后端：** Python 3.12+, FastAPI, SQLAlchemy 2.0
-- **执行器：** claude-agent-sdk
-- **数据库：** PostgreSQL
+**前端：**
+
+- Next.js 16 (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS v4
+- shadcn/ui
+
+**后端服务：**
+
+- Python 3.12+
+- FastAPI
+- SQLAlchemy 2.0
+- PostgreSQL
+- APScheduler
+
+## 快速开始
+
+```bash
+# 克隆仓库
+git clone https://github.com/yourusername/opencowork.git
+cd opencowork
+
+# 安装 Python 依赖（每个服务）
+cd backend && uv sync
+cd ../executor && uv sync
+cd ../executor_manager && uv sync
+
+# 安装前端依赖
+cd frontend && pnpm install
+
+# 启动服务（每个服务在独立终端）
+# 后端
+cd backend && uvicorn app.main:app --reload
+
+# 执行器
+cd executor && uvicorn app.main:app --reload
+
+# 执行管理器
+cd executor_manager && uvicorn app.main:app --reload
+
+# 前端
+cd frontend && pnpm dev
+```
+
+## 文档
+
+详细文档请参阅 [CLAUDE.md](./CLAUDE.md)。
 
 ## 致谢
 
-灵感来自 [Anthropic 的 Cowork](https://claude.ai/code)，一个面向所有人的 AI 驱动协作平台。
+灵感来源于 [Anthropic's Cowork](https://claude.ai/code)——面向所有人的 AI 驱动协作平台。
+
+---
+
+<div align="center">
+  <p>Built with ❤️ by the OpenCoWork team</p>
+</div>
