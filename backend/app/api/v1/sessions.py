@@ -1,10 +1,17 @@
 import uuid
+import json
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 
-from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, Query, Request as FastAPIRequest
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.errors.error_codes import ErrorCode
+from app.core.errors.exceptions import AppException
+from app.core.settings import get_settings
 from app.schemas.message import MessageResponse
 from app.schemas.response import Response, ResponseSchema
 from app.schemas.session import (
@@ -14,10 +21,12 @@ from app.schemas.session import (
 )
 from app.schemas.tool_execution import ToolExecutionResponse
 from app.schemas.usage import UsageResponse
+from app.schemas.workspace import FileNode
 from app.services.message_service import MessageService
 from app.services.session_service import SessionService
 from app.services.tool_execution_service import ToolExecutionService
 from app.services.usage_service import UsageService
+from app.utils.workspace import build_workspace_file_nodes
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -130,3 +139,71 @@ async def get_session_usage(
         data=usage,
         message="Usage statistics retrieved successfully",
     )
+
+
+@router.get(
+    "/{session_id}/workspace/files",
+    response_model=ResponseSchema[list[FileNode]],
+)
+async def get_session_workspace_files(
+    session_id: uuid.UUID,
+    request: FastAPIRequest,
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """List workspace files for a session (proxy to Executor Manager)."""
+    db_session = session_service.get_session(db, session_id)
+    settings = get_settings()
+
+    url = f"{settings.executor_manager_url}/api/v1/workspace/files/{db_session.user_id}/{session_id}"
+
+    try:
+        em_request = Request(url, headers={"accept": "application/json"})
+        with urlopen(em_request, timeout=5) as resp:  # noqa: S310
+            payload = json.loads(resp.read().decode("utf-8"))
+        data = payload.get("data", payload) if isinstance(payload, dict) else payload
+        raw_nodes = data if isinstance(data, list) else []
+    except HTTPError as e:
+        raise AppException(
+            error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
+            message=f"Executor Manager workspace request failed: {e.code}",
+        ) from e
+    except URLError as e:
+        raise AppException(
+            error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
+            message=f"Executor Manager unavailable: {e.reason}",
+        ) from e
+    except Exception as e:
+        raise AppException(
+            error_code=ErrorCode.EXTERNAL_SERVICE_ERROR,
+            message=f"Failed to fetch workspace files from Executor Manager: {e}",
+        ) from e
+
+    api_base = str(request.base_url).rstrip("/")
+
+    def build_file_url(file_path: str) -> str:
+        encoded = quote(file_path, safe="")
+        return f"{api_base}/api/v1/sessions/{session_id}/workspace/file?path={encoded}"
+
+    nodes = build_workspace_file_nodes(
+        raw_nodes,
+        file_url_builder=build_file_url,
+    )
+    return Response.success(data=nodes, message="Workspace files retrieved")
+
+
+@router.get("/{session_id}/workspace/file")
+async def get_session_workspace_file(
+    session_id: uuid.UUID,
+    path: str = Query(..., description="File path within the session workspace"),
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
+    """Redirect to Executor Manager file endpoint for preview/download."""
+    db_session = session_service.get_session(db, session_id)
+    settings = get_settings()
+
+    encoded = quote(path, safe="")
+    target = (
+        f"{settings.executor_manager_url}/api/v1/workspace/file/{db_session.user_id}/{session_id}"
+        f"?path={encoded}"
+    )
+    return RedirectResponse(url=target, status_code=307)
