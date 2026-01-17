@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     openai_default_model: str = Field(
         default="gpt-4o-mini", alias="OPENAI_DEFAULT_MODEL"
     )
+    max_upload_size_mb: int = Field(default=100, alias="MAX_UPLOAD_SIZE_MB")
 
     model_config = SettingsConfigDict(
         env_file=".env",
