@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/client";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type {
   UserInputQuestion,
   UserInputRequest,
@@ -22,7 +23,7 @@ interface UserInputRequestCardProps {
 interface QuestionState {
   selected: string[];
   otherText: string;
-  multiSelect: boolean;
+  otherSelected: boolean;
 }
 
 export function UserInputRequestCard({
@@ -36,19 +37,35 @@ export function UserInputRequestCard({
 
   const [questionState, setQuestionState] = React.useState<
     Record<string, QuestionState>
-  >(() => {
-    const initial: Record<string, QuestionState> = {};
-    questions.forEach((q) => {
-      initial[q.question] = {
-        selected: [],
-        otherText: "",
-        multiSelect: !!q.multiSelect,
-      };
-    });
-    return initial;
-  });
+  >(() =>
+    Object.fromEntries(
+      questions.map((q) => [
+        q.question,
+        { selected: [], otherText: "", otherSelected: false },
+      ]),
+    ),
+  );
 
   const [secondsLeft, setSecondsLeft] = React.useState<number | null>(null);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+
+  const currentQuestion = questions[currentIndex];
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => Math.max(0, prev - 1));
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => Math.min(questions.length - 1, prev + 1));
+  };
+
+  const isOtherSelected = (q: UserInputQuestion) =>
+    questionState[q.question]?.otherSelected ?? false;
+
+  const isQuestionAnswered = (q: UserInputQuestion) =>
+    questionState[q.question]?.selected.length > 0 || isOtherSelected(q);
+
+  const allAnswered = questions.every(isQuestionAnswered);
 
   React.useEffect(() => {
     if (!request.expires_at) {
@@ -66,17 +83,28 @@ export function UserInputRequestCard({
     return () => window.clearInterval(timer);
   }, [request.expires_at]);
 
-  const setSelected = (question: string, values: string[]) => {
+  const setSelected = (questionKey: string, values: string[]) => {
     setQuestionState((prev) => ({
       ...prev,
-      [question]: { ...prev[question], selected: values },
+      [questionKey]: { ...prev[questionKey], selected: values },
     }));
   };
 
-  const setOtherText = (question: string, value: string) => {
+  const setOtherText = (questionKey: string, value: string) => {
     setQuestionState((prev) => ({
       ...prev,
-      [question]: { ...prev[question], otherText: value },
+      [questionKey]: { ...prev[questionKey], otherText: value },
+    }));
+  };
+
+  const toggleOtherSelected = (questionKey: string, selected: boolean) => {
+    setQuestionState((prev) => ({
+      ...prev,
+      [questionKey]: {
+        ...prev[questionKey],
+        otherSelected: selected,
+        otherText: selected ? prev[questionKey].otherText : "",
+      },
     }));
   };
 
@@ -84,23 +112,15 @@ export function UserInputRequestCard({
     const result: Record<string, string> = {};
     for (const q of questions) {
       const state = questionState[q.question];
-      if (!state) continue;
+      if (!state) return null;
 
-      const trimmedOther = state.otherText.trim();
-      if (state.multiSelect) {
-        const selections = [...state.selected];
-        if (trimmedOther) selections.push(trimmedOther);
-        if (selections.length === 0) return null;
-        result[q.question] = selections.join(", ");
-      } else {
-        if (trimmedOther) {
-          result[q.question] = trimmedOther;
-        } else if (state.selected[0]) {
-          result[q.question] = state.selected[0];
-        } else {
-          return null;
-        }
-      }
+      const otherText = state.otherSelected ? state.otherText.trim() : "";
+      const selections = q.multiSelect
+        ? [...state.selected, ...(otherText ? [otherText] : [])]
+        : otherText || state.selected[0] || "";
+
+      if (!selections) return null;
+      result[q.question] = q.multiSelect ? selections.join(", ") : selections;
     }
     return result;
   };
@@ -120,11 +140,20 @@ export function UserInputRequestCard({
     }
   };
 
+  if (questions.length === 0) {
+    return null;
+  }
+
+  // Auto-close when timeout
+  if (secondsLeft === 0) {
+    return null;
+  }
+
   return (
     <div className="border border-border rounded-lg bg-card/60 p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-medium">
-          {t("chat.askUserTitle", "需要你的确认")}
+        <div className="text-sm font-medium text-foreground">
+          {currentQuestion?.header}
         </div>
         {secondsLeft !== null && (
           <div
@@ -141,82 +170,199 @@ export function UserInputRequestCard({
       </div>
 
       <div className="space-y-4">
-        {questions.map((q) => {
-          const state = questionState[q.question];
-          const selected = state?.selected || [];
-          return (
-            <div key={q.question} className="space-y-2">
-              <div className="text-sm font-medium text-foreground">
-                {q.header}
-              </div>
-              <div className="text-sm text-muted-foreground">{q.question}</div>
+        {currentQuestion && (
+          <div key={currentQuestion.question} className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              {currentQuestion.question}
+            </div>
 
-              {q.multiSelect ? (
-                <div className="space-y-2">
-                  {q.options.map((opt) => {
-                    const checked = selected.includes(opt.label);
-                    return (
-                      <label
-                        key={opt.label}
-                        className="flex items-start gap-2 text-sm cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={(value) => {
-                            const next = value
-                              ? [...selected, opt.label]
-                              : selected.filter((v) => v !== opt.label);
-                            setSelected(q.question, next);
-                          }}
-                        />
-                        <div>
-                          <div className="text-foreground">{opt.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {opt.description}
-                          </div>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              ) : (
-                <RadioGroup
-                  className="space-y-2"
-                  value={selected[0] || ""}
-                  onValueChange={(value) => setSelected(q.question, [value])}
-                >
-                  {q.options.map((opt) => (
+            {currentQuestion.multiSelect ? (
+              <div className="space-y-2">
+                {currentQuestion.options.map((opt) => {
+                  const questionKey = currentQuestion.question;
+                  const selected = questionState[questionKey]?.selected || [];
+                  const checked = selected.includes(opt.label);
+                  return (
                     <label
                       key={opt.label}
                       className="flex items-start gap-2 text-sm cursor-pointer"
                     >
-                      <RadioGroupItem value={opt.label} />
-                      <div>
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(value) => {
+                          const next = value
+                            ? [...selected, opt.label]
+                            : selected.filter((v) => v !== opt.label);
+                          setSelected(questionKey, next);
+                        }}
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1">
                         <div className="text-foreground">{opt.label}</div>
                         <div className="text-xs text-muted-foreground">
                           {opt.description}
                         </div>
                       </div>
                     </label>
-                  ))}
-                </RadioGroup>
-              )}
+                  );
+                })}
 
-              <Input
-                value={state?.otherText || ""}
-                onChange={(e) => setOtherText(q.question, e.target.value)}
-                placeholder={t("chat.askUserOtherPlaceholder", "其他（可选）")}
+                {/* Other option - clickable checkbox with conditional input */}
+                <label className="flex items-start gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={isOtherSelected(currentQuestion)}
+                    onCheckedChange={(checked) =>
+                      toggleOtherSelected(currentQuestion.question, !!checked)
+                    }
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <div className="text-foreground">
+                      {t("chat.askUserOtherOption", "其他")}
+                    </div>
+                    {isOtherSelected(currentQuestion) && (
+                      <Input
+                        value={
+                          questionState[currentQuestion.question]?.otherText ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setOtherText(currentQuestion.question, e.target.value)
+                        }
+                        placeholder={t(
+                          "chat.askUserOtherPlaceholder",
+                          "请输入具体内容",
+                        )}
+                        className="mt-2"
+                        onClick={(e) => e.stopPropagation()}
+                        autoFocus
+                      />
+                    )}
+                  </div>
+                </label>
+              </div>
+            ) : (
+              <RadioGroup
+                className="space-y-2"
+                value={
+                  isOtherSelected(currentQuestion)
+                    ? "other"
+                    : questionState[currentQuestion.question]?.selected[0] || ""
+                }
+                onValueChange={(value) => {
+                  if (value === "other") {
+                    toggleOtherSelected(currentQuestion.question, true);
+                    setSelected(currentQuestion.question, []);
+                  } else {
+                    setSelected(currentQuestion.question, [value]);
+                    toggleOtherSelected(currentQuestion.question, false);
+                  }
+                }}
+              >
+                {currentQuestion.options.map((opt) => (
+                  <label
+                    key={opt.label}
+                    className="flex items-start gap-2 text-sm cursor-pointer"
+                  >
+                    <RadioGroupItem value={opt.label} className="mt-0.5" />
+                    <div className="flex-1">
+                      <div className="text-foreground">{opt.label}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {opt.description}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+
+                {/* Other option - clickable radio with conditional input */}
+                <label className="flex items-start gap-2 text-sm cursor-pointer">
+                  <RadioGroupItem value="other" className="mt-0.5" />
+                  <div className="flex-1">
+                    <div className="text-foreground">
+                      {t("chat.askUserOtherOption", "其他")}
+                    </div>
+                    {isOtherSelected(currentQuestion) && (
+                      <Input
+                        value={
+                          questionState[currentQuestion.question]?.otherText ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setOtherText(currentQuestion.question, e.target.value)
+                        }
+                        placeholder={t(
+                          "chat.askUserOtherPlaceholder",
+                          "请输入具体内容",
+                        )}
+                        className="mt-2"
+                        onClick={(e) => e.stopPropagation()}
+                        autoFocus
+                      />
+                    )}
+                  </div>
+                </label>
+              </RadioGroup>
+            )}
+          </div>
+        )}
+      </div>
+
+      {questions.length === 1 ? (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={isSubmitting || !allAnswered}
+          >
+            {t("chat.askUserSubmit", "提交")}
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToPrevious}
+            disabled={currentIndex === 0}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {t("chat.askUserPrevious", "上一题")}
+          </Button>
+
+          <div className="flex items-center gap-1">
+            {questions.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentIndex(idx)}
+                className={cn(
+                  "h-2 rounded-full transition-all",
+                  idx === currentIndex
+                    ? "w-6 bg-primary"
+                    : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50",
+                )}
+                aria-label={t("chat.askUserGoTo", "第 {{index}} 题", {
+                  index: idx + 1,
+                })}
               />
-            </div>
-          );
-        })}
-      </div>
+            ))}
+          </div>
 
-      <div className="flex justify-end">
-        <Button onClick={handleSubmit} disabled={isSubmitting}>
-          {t("chat.askUserSubmit", "提交")}
-        </Button>
-      </div>
+          {currentIndex === questions.length - 1 ? (
+            <Button
+              size="sm"
+              onClick={handleSubmit}
+              disabled={isSubmitting || !allAnswered}
+            >
+              {t("chat.askUserSubmit", "提交")}
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={goToNext}>
+              {t("chat.askUserNext", "下一题")}
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

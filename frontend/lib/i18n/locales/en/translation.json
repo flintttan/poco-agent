@@ -84,11 +84,16 @@
     "inputPlaceholder": "Enter to send, Shift + Enter for new line",
     "askUserTitle": "Needs your input",
     "askUserSubmit": "Submit",
-    "askUserOtherPlaceholder": "Other (optional)",
+    "askUserOtherPlaceholder": "Enter your answer",
+    "askUserOtherOption": "Other",
     "askUserRequired": "Please answer all questions before submitting",
     "askUserSubmitted": "Answers submitted",
     "askUserFailed": "Submission failed, please try again",
-    "askUserTimeout": "Time left {{seconds}}s"
+    "askUserTimeout": "Time left {{seconds}}s",
+    "askUserPrevious": "Previous",
+    "askUserNext": "Next",
+    "askUserGoTo": "Question {{index}}",
+    "askUserProgress": "{{current}} / {{total}}"
   },
   "status": {
     "pending": "Pending",

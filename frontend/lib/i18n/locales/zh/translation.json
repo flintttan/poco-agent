@@ -84,11 +84,16 @@
     "inputPlaceholder": "Enter 发送，Shift + Enter 换行",
     "askUserTitle": "需要你的确认",
     "askUserSubmit": "提交",
-    "askUserOtherPlaceholder": "其他（可选）",
+    "askUserOtherPlaceholder": "请输入具体内容",
+    "askUserOtherOption": "其他",
     "askUserRequired": "请回答所有问题后再提交",
     "askUserSubmitted": "已提交答案",
     "askUserFailed": "提交失败，请重试",
-    "askUserTimeout": "剩余 {{seconds}} 秒"
+    "askUserTimeout": "剩余 {{seconds}} 秒",
+    "askUserPrevious": "上一题",
+    "askUserNext": "下一题",
+    "askUserGoTo": "第 {{index}} 题",
+    "askUserProgress": "{{current}} / {{total}} 题"
   },
   "status": {
     "pending": "待处理",
