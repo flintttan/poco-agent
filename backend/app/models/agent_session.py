@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.project import Project
     from app.models.tool_execution import ToolExecution
     from app.models.usage_log import UsageLog
+    from app.models.user_input_request import UserInputRequest
 
 
 class AgentSession(Base, TimestampMixin):
@@ -54,5 +55,8 @@ class AgentSession(Base, TimestampMixin):
         back_populates="session", cascade="all, delete-orphan"
     )
     usage_logs: Mapped[list["UsageLog"]] = relationship(
+        back_populates="session", cascade="all, delete-orphan"
+    )
+    user_input_requests: Mapped[list["UserInputRequest"]] = relationship(
         back_populates="session", cascade="all, delete-orphan"
     )

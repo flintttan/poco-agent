@@ -5,6 +5,7 @@ from app.api.v1 import (
     callback,
     env_vars,
     internal_env_vars,
+    internal_user_input_requests,
     mcp_presets,
     messages,
     projects,
@@ -15,6 +16,7 @@ from app.api.v1 import (
     skill_presets,
     tasks,
     tool_executions,
+    user_input_requests,
     user_mcp_configs,
 )
 from app.core.settings import get_settings
@@ -33,10 +35,12 @@ api_v1_router.include_router(tool_executions.router)
 api_v1_router.include_router(attachments.router)
 api_v1_router.include_router(env_vars.router)
 api_v1_router.include_router(internal_env_vars.router)
+api_v1_router.include_router(internal_user_input_requests.router)
 api_v1_router.include_router(mcp_presets.router)
 api_v1_router.include_router(user_mcp_configs.router)
 api_v1_router.include_router(skill_presets.router)
 api_v1_router.include_router(skill_installs.router)
+api_v1_router.include_router(user_input_requests.router)
 
 
 @api_v1_router.get("/")

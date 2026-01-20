@@ -10,6 +10,7 @@ from app.models.skill_preset import SkillPreset
 from app.models.tool_execution import ToolExecution
 from app.models.usage_log import UsageLog
 from app.models.user_mcp_config import UserMcpConfig
+from app.models.user_input_request import UserInputRequest
 from app.models.user_skill_install import UserSkillInstall
 
 __all__ = [
@@ -25,5 +26,6 @@ __all__ = [
     "ToolExecution",
     "UsageLog",
     "UserMcpConfig",
+    "UserInputRequest",
     "UserSkillInstall",
 ]
