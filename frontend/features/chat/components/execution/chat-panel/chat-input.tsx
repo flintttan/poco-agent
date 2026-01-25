@@ -131,7 +131,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
           <DropdownMenuTrigger asChild>
             <button
               disabled={disabled || isUploading}
-              className="flex items-center justify-center size-8 rounded-md hover:bg-muted text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-shrink-0 flex items-center justify-center size-8 rounded-md hover:bg-muted text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isUploading ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -167,10 +167,11 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
           placeholder={t("chat.inputPlaceholder")}
           disabled={disabled}
           rows={1}
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-hidden"
+          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-hidden py-1"
           style={{
-            minHeight: "1.5rem",
+            minHeight: "2rem",
             maxHeight: "10rem",
+            lineHeight: "1.5rem",
           }}
           onInput={(e) => {
             // Auto-resize textarea
@@ -182,7 +183,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
         <button
           onClick={handleSend}
           disabled={(!value.trim() && attachments.length === 0) || disabled}
-          className="flex items-center justify-center size-8 rounded-md bg-foreground text-background hover:bg-foreground/90 disabled:bg-muted disabled:text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex-shrink-0 flex items-center justify-center size-8 rounded-md bg-foreground text-background hover:bg-foreground/90 disabled:bg-muted disabled:text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           <SendHorizontal className="size-4" />
         </button>

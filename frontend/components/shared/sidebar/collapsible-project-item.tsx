@@ -146,126 +146,133 @@ export function CollapsibleProjectItem({
         )}
       >
         {/* 项目标题行 */}
-        <SidebarMenuButton
-          asChild
-          className={cn(
-            "h-8 justify-start gap-3 text-sm hover:bg-sidebar-accent pr-8",
-            isOver && "bg-primary/20",
-          )}
-          tooltip={project.name}
-          onPointerDown={handlePointerDown}
-          onPointerUp={clearPointerTimer}
-          onPointerLeave={clearPointerTimer}
-        >
-          <div className="cursor-pointer">
-            {isSelectionMode && (
-              <Checkbox
-                checked={isSelected}
-                onCheckedChange={() => onToggleProjectSelection?.(project.id)}
-                className="size-4"
-                onClick={(e) => e.stopPropagation()}
-              />
+        <div className="relative">
+          <SidebarMenuButton
+            asChild
+            className={cn(
+              "h-8 justify-start gap-3 text-sm hover:bg-sidebar-accent pr-8",
+              isOver && "bg-primary/20",
             )}
-            {/* 折叠按钮 */}
-            <span
-              role="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggle();
-              }}
-              className="size-4 shrink-0 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              {isExpanded ? (
-                <ChevronDown className="size-3 transition-transform" />
-              ) : (
-                <ChevronRight className="size-3 transition-transform" />
+            tooltip={project.name}
+            onPointerDown={handlePointerDown}
+            onPointerUp={clearPointerTimer}
+            onPointerLeave={clearPointerTimer}
+          >
+            <div className="cursor-pointer">
+              {isSelectionMode && (
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => onToggleProjectSelection?.(project.id)}
+                  className="size-4"
+                  onClick={(e) => e.stopPropagation()}
+                />
               )}
-            </span>
-
-            {/* 项目图标和名称 */}
-            <div
-              className="flex flex-1 items-center gap-3 min-w-0"
-              onClick={(e) => {
-                if (longPressTriggeredRef.current) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  longPressTriggeredRef.current = false;
-                  return;
-                }
-                e.stopPropagation();
-                if (isSelectionMode) {
-                  onToggleProjectSelection?.(project.id);
-                } else {
-                  onProjectClick();
-                }
-              }}
-            >
-              <Folder
-                className={cn(
-                  "size-4 text-muted-foreground group-data-[collapsible=icon]:hidden",
-                  isOver && "text-primary",
-                )}
-              />
-              <span className={cn("flex-1 truncate", isOver && "text-primary")}>
-                {project.name}
-              </span>
-            </div>
-
-            {isOver && (
-              <span className="ml-auto text-xs text-primary shrink-0">
-                移动到这里
-              </span>
-            )}
-          </div>
-        </SidebarMenuButton>
-
-        {/* 任务数量 - 默认显示，悬浮或下拉菜单打开时隐藏 */}
-        {!isDropdownOpen && (
-          <SidebarMenuBadge className="opacity-100 transition-opacity group-hover/project-item:opacity-0 group-data-[collapsible=icon]:hidden">
-            {tasks.length}
-          </SidebarMenuBadge>
-        )}
-
-        {/* 更多按钮 - 默认隐藏，悬浮时显示 */}
-        {onRenameProject && !isSelectionMode && (
-          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-              <SidebarMenuAction
-                showOnHover
-                onClick={(e) => e.stopPropagation()}
-                className="right-2"
-              >
-                <MoreHorizontal />
-              </SidebarMenuAction>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" side="right">
-              <DropdownMenuItem
+              {/* 折叠按钮 */}
+              <span
+                role="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsRenameDialogOpen(true);
+                  onToggle();
+                }}
+                className="size-4 shrink-0 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="size-3 transition-transform" />
+                ) : (
+                  <ChevronRight className="size-3 transition-transform" />
+                )}
+              </span>
+
+              {/* 项目图标和名称 */}
+              <div
+                className="flex flex-1 items-center gap-3 min-w-0"
+                onClick={(e) => {
+                  if (longPressTriggeredRef.current) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    longPressTriggeredRef.current = false;
+                    return;
+                  }
+                  e.stopPropagation();
+                  if (isSelectionMode) {
+                    onToggleProjectSelection?.(project.id);
+                  } else {
+                    onProjectClick();
+                  }
                 }}
               >
-                <PenSquare className="size-4" />
-                <span>{t("project.rename")}</span>
-              </DropdownMenuItem>
-              {onDeleteProject && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 className="size-4" />
-                    <span>{t("project.delete")}</span>
-                  </DropdownMenuItem>
-                </>
+                <Folder
+                  className={cn(
+                    "size-4 text-muted-foreground group-data-[collapsible=icon]:hidden",
+                    isOver && "text-primary",
+                  )}
+                />
+                <span
+                  className={cn("flex-1 truncate", isOver && "text-primary")}
+                >
+                  {project.name}
+                </span>
+              </div>
+
+              {isOver && (
+                <span className="ml-auto text-xs text-primary shrink-0">
+                  移动到这里
+                </span>
               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+            </div>
+          </SidebarMenuButton>
+
+          {/* 任务数量 - 默认显示，悬浮或下拉菜单打开时隐藏 */}
+          {!isDropdownOpen && (
+            <SidebarMenuBadge className="right-2 opacity-100 transition-opacity group-hover/project-item:opacity-0 group-data-[collapsible=icon]:hidden">
+              {tasks.length}
+            </SidebarMenuBadge>
+          )}
+
+          {/* 更多按钮 - 默认隐藏，悬浮时显示 */}
+          {onRenameProject && !isSelectionMode && (
+            <DropdownMenu
+              open={isDropdownOpen}
+              onOpenChange={setIsDropdownOpen}
+            >
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuAction
+                  showOnHover
+                  onClick={(e) => e.stopPropagation()}
+                  className="right-2"
+                >
+                  <MoreHorizontal />
+                </SidebarMenuAction>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="right">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsRenameDialogOpen(true);
+                  }}
+                >
+                  <PenSquare className="size-4" />
+                  <span>{t("project.rename")}</span>
+                </DropdownMenuItem>
+                {onDeleteProject && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="size-4" />
+                      <span>{t("project.delete")}</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
 
         {/* 任务列表（可折叠） */}
         {isExpanded && (
