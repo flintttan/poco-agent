@@ -79,7 +79,8 @@ class AttachmentStager:
                         "duration_ms": int((time.perf_counter() - step_started) * 1000),
                         "user_id": user_id,
                         "session_id": session_id,
-                        "name": name or destination.name,
+                        # "name" is reserved in LogRecord (logger name).
+                        "input_name": name or destination.name,
                         "rel_path": rel_path,
                         "s3_key": str(s3_key),
                     },
@@ -106,7 +107,8 @@ class AttachmentStager:
                         "duration_ms": int((time.perf_counter() - step_started) * 1000),
                         "user_id": user_id,
                         "session_id": session_id,
-                        "name": name or repo_name,
+                        # "name" is reserved in LogRecord (logger name).
+                        "input_name": name or repo_name,
                         "rel_path": rel_path,
                         "repo_url": repo_url,
                         "branch": branch,
