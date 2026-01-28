@@ -11,7 +11,8 @@ acceptLanguage.languages(languages);
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|assets|favicon.ico|sw.js|site.webmanifest).*)",
+    // Exclude Next internals and static assets (e.g. /logo.jpg) from locale redirects.
+    "/((?!api|_next/static|_next/image|assets|favicon.ico|sw.js|site.webmanifest|.*\\..*).*)",
   ],
 };
 
