@@ -59,10 +59,20 @@ async def list_sessions(
     limit: int = 100,
     offset: int = 0,
     project_id: uuid.UUID | None = Query(default=None),
+    kind: str = Query(default="chat"),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
     """Lists sessions."""
-    sessions = session_service.list_sessions(db, user_id, limit, offset, project_id)
+    kind_filter = kind.strip().lower()
+    kind_value = None if kind_filter in {"", "all"} else kind_filter
+    sessions = session_service.list_sessions(
+        db,
+        user_id,
+        limit,
+        offset,
+        project_id,
+        kind=kind_value,
+    )
     return Response.success(
         data=[SessionResponse.model_validate(s) for s in sessions],
         message="Sessions retrieved successfully",

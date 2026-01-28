@@ -25,6 +25,7 @@ class RunResponse(BaseModel):
     status: str
     progress: int
     schedule_mode: str
+    scheduled_task_id: UUID | None = None
     scheduled_at: datetime
     config_snapshot: dict | None = None
     claimed_by: str | None

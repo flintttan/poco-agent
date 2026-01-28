@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
@@ -17,9 +18,22 @@ from app.schemas.task import TaskEnqueueRequest, TaskEnqueueResponse
 class TaskService:
     """Service layer for task enqueue operations."""
 
-    def _normalize_scheduled_at(self, scheduled_at: datetime) -> datetime:
+    def _normalize_scheduled_at(
+        self, scheduled_at: datetime, timezone_name: str | None
+    ) -> datetime:
         if scheduled_at.tzinfo is None:
-            scheduled_at = scheduled_at.replace(tzinfo=timezone.utc)
+            tz_raw = (timezone_name or "").strip()
+            if tz_raw:
+                try:
+                    tz = ZoneInfo(tz_raw)
+                except Exception as e:
+                    raise AppException(
+                        error_code=ErrorCode.BAD_REQUEST,
+                        message=f"Invalid timezone: {tz_raw}",
+                    ) from e
+                scheduled_at = scheduled_at.replace(tzinfo=tz)
+            else:
+                scheduled_at = scheduled_at.replace(tzinfo=timezone.utc)
         return scheduled_at.astimezone(timezone.utc)
 
     def _resolve_schedule(
@@ -37,7 +51,7 @@ class TaskService:
                 message="schedule_mode cannot be empty",
             )
         scheduled_at = (
-            self._normalize_scheduled_at(request.scheduled_at)
+            self._normalize_scheduled_at(request.scheduled_at, request.timezone)
             if request.scheduled_at is not None
             else None
         )
@@ -114,6 +128,7 @@ class TaskService:
                 user_id=user_id,
                 config=config_dict,
                 project_id=project_id,
+                kind="chat",
             )
             db.flush()
         if merged_config is not None:

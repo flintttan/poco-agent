@@ -39,6 +39,13 @@ class AgentSession(Base, TimestampMixin):
         String(50), nullable=True
     )
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    kind: Mapped[str] = mapped_column(
+        String(50),
+        default="chat",
+        server_default=text("'chat'"),
+        nullable=False,
+        index=True,
+    )
     status: Mapped[str] = mapped_column(String(50), default="running", nullable=False)
     is_deleted: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default=text("false"), nullable=False

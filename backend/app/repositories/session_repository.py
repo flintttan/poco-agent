@@ -15,6 +15,8 @@ class SessionRepository:
         user_id: str,
         config: dict[str, Any] | None = None,
         project_id: uuid.UUID | None = None,
+        *,
+        kind: str = "chat",
     ) -> AgentSession:
         """Creates a new session.
 
@@ -24,6 +26,7 @@ class SessionRepository:
             user_id=user_id,
             config_snapshot=config,
             project_id=project_id,
+            kind=kind,
             status="pending",
         )
         session_db.add(db_session)
@@ -62,12 +65,15 @@ class SessionRepository:
         limit: int = 100,
         offset: int = 0,
         project_id: uuid.UUID | None = None,
+        kind: str | None = None,
     ) -> list[AgentSession]:
         """Lists sessions for a user."""
         query = session_db.query(AgentSession).filter(
             AgentSession.user_id == user_id,
             AgentSession.is_deleted.is_(False),
         )
+        if kind:
+            query = query.filter(AgentSession.kind == kind)
         if project_id is not None:
             query = query.filter(AgentSession.project_id == project_id)
         return (
@@ -83,11 +89,14 @@ class SessionRepository:
         limit: int = 100,
         offset: int = 0,
         project_id: uuid.UUID | None = None,
+        kind: str | None = None,
     ) -> list[AgentSession]:
         """Lists all sessions."""
         query = session_db.query(AgentSession).filter(
             AgentSession.is_deleted.is_(False)
         )
+        if kind:
+            query = query.filter(AgentSession.kind == kind)
         if project_id is not None:
             query = query.filter(AgentSession.project_id == project_id)
         return (

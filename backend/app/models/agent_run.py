@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     BigInteger,
@@ -19,6 +19,7 @@ from app.models import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.agent_message import AgentMessage
+    from app.models.agent_scheduled_task import AgentScheduledTask
     from app.models.agent_session import AgentSession
 
 
@@ -49,6 +50,11 @@ class AgentRun(Base, TimestampMixin):
     schedule_mode: Mapped[str] = mapped_column(
         String(50), default="immediate", nullable=False, index=True
     )
+    scheduled_task_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("agent_scheduled_tasks.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     config_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     scheduled_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -72,3 +78,6 @@ class AgentRun(Base, TimestampMixin):
 
     session: Mapped["AgentSession"] = relationship(back_populates="runs")
     user_message: Mapped["AgentMessage"] = relationship(foreign_keys=[user_message_id])
+    scheduled_task: Mapped[Optional["AgentScheduledTask"]] = relationship(
+        back_populates="runs"
+    )

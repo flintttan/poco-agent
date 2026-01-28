@@ -2,6 +2,7 @@ from app.core.database import Base, TimestampMixin
 
 from app.models.agent_message import AgentMessage
 from app.models.agent_run import AgentRun
+from app.models.agent_scheduled_task import AgentScheduledTask
 from app.models.agent_session import AgentSession
 from app.models.env_var import UserEnvVar
 from app.models.mcp_server import McpServer
@@ -19,6 +20,7 @@ __all__ = [
     "TimestampMixin",
     "AgentMessage",
     "AgentRun",
+    "AgentScheduledTask",
     "AgentSession",
     "UserEnvVar",
     "McpServer",

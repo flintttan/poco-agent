@@ -60,6 +60,23 @@ class RunRepository:
         )
 
     @staticmethod
+    def list_by_scheduled_task(
+        session_db: Session,
+        scheduled_task_id: uuid.UUID,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[AgentRun]:
+        return (
+            session_db.query(AgentRun)
+            .filter(AgentRun.scheduled_task_id == scheduled_task_id)
+            .order_by(AgentRun.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+            .all()
+        )
+
+    @staticmethod
     def release_expired_claims(session_db: Session) -> int:
         """Release expired claimed runs back to queued.
 

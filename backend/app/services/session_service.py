@@ -35,6 +35,7 @@ class SessionService:
             user_id=user_id,
             config=config_dict,
             project_id=project_id,
+            kind="chat",
         )
 
         db.commit()
@@ -116,13 +117,15 @@ class SessionService:
         limit: int = 100,
         offset: int = 0,
         project_id: uuid.UUID | None = None,
+        *,
+        kind: str | None = None,
     ) -> list[AgentSession]:
         """Lists sessions, optionally filtered by user."""
         if user_id:
             return SessionRepository.list_by_user(
-                db, user_id, limit, offset, project_id
+                db, user_id, limit, offset, project_id, kind=kind
             )
-        return SessionRepository.list_all(db, limit, offset, project_id)
+        return SessionRepository.list_all(db, limit, offset, project_id, kind=kind)
 
     def find_session_by_sdk_id_or_uuid(
         self, db: Session, session_id: str
