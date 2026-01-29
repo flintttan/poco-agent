@@ -34,3 +34,4 @@ class TaskRun(BaseModel):
     config: TaskConfig
     sdk_session_id: str | None = None
     callback_base_url: str | None = None
+    permission_mode: str = "default"

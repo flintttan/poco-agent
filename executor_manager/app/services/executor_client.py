@@ -34,6 +34,7 @@ class ExecutorClient:
         config: dict,
         callback_base_url: str | None = None,
         sdk_session_id: str | None = None,
+        permission_mode: str = "default",
     ) -> str:
         """Call Executor to execute a task.
 
@@ -59,6 +60,7 @@ class ExecutorClient:
                     "callback_base_url": callback_base_url,
                     "config": config,
                     "sdk_session_id": sdk_session_id,
+                    "permission_mode": permission_mode or "default",
                 },
                 headers=self._trace_headers(),
                 timeout=httpx.Timeout(30.0, connect=10.0),

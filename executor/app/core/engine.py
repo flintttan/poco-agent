@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from datetime import datetime, timedelta, timezone
 
 from claude_agent_sdk import ClaudeAgentOptions
 from claude_agent_sdk.client import ClaudeSDKClient
@@ -54,7 +55,9 @@ class AgentExecutor:
             mount_path=os.environ.get("WORKSPACE_PATH", "/workspace")
         )
 
-    async def execute(self, prompt: str, config: TaskConfig):
+    async def execute(
+        self, prompt: str, config: TaskConfig, *, permission_mode: str = "default"
+    ):
         await self.workspace.prepare(config)
         ctx = ExecutionContext(self.session_id, str(self.workspace.work_path))
 
@@ -89,45 +92,132 @@ class AgentExecutor:
             ) -> SyncHookJSONOutput:
                 return {"continue_": True}
 
+            normalized_permission_mode = (permission_mode or "default").strip()
+            if normalized_permission_mode not in {
+                "default",
+                "acceptEdits",
+                "plan",
+                "bypassPermissions",
+            }:
+                normalized_permission_mode = "default"
+
+            # Plan mode is a two-phase flow:
+            # - Phase 1 (planning): deny execution tools (Write/Bash/...) until ExitPlanMode is approved.
+            # - Phase 2 (execution): allow tools normally.
+            plan_approved = normalized_permission_mode != "plan"
+
             async def can_use_tool(tool_name, input_data, context):
-                if tool_name != "AskUserQuestion":
-                    return PermissionResultAllow(updated_input=input_data)
+                nonlocal plan_approved
 
                 if not self.user_input_client:
                     return PermissionResultDeny(
                         message="User input client not configured"
                     )
 
-                try:
-                    request_payload = {
-                        "session_id": self.session_id,
-                        "tool_name": tool_name,
-                        "tool_input": input_data,
+                # Enforce "plan" phase restrictions until the plan is approved.
+                if normalized_permission_mode == "plan" and not plan_approved:
+                    allowed_in_plan_phase = {
+                        "Read",
+                        "Grep",
+                        "Glob",
+                        "TodoWrite",
+                        "Task",
+                        "Skill",
+                        "AskUserQuestion",
+                        "ExitPlanMode",
                     }
-                    created = await self.user_input_client.create_request(
-                        request_payload
-                    )
-                    request_id = created.get("id")
-                    if not request_id:
+                    if tool_name not in allowed_in_plan_phase:
                         return PermissionResultDeny(
-                            message="Failed to create user input request"
+                            message=f"Tool '{tool_name}' is not allowed in plan mode before approval",
+                            interrupt=False,
                         )
-                    result = await self.user_input_client.wait_for_answer(
-                        request_id=request_id,
-                        timeout_seconds=60,
+
+                if tool_name == "AskUserQuestion":
+                    try:
+                        request_payload = {
+                            "session_id": self.session_id,
+                            "tool_name": tool_name,
+                            "tool_input": input_data,
+                        }
+                        created = await self.user_input_client.create_request(
+                            request_payload
+                        )
+                        request_id = created.get("id")
+                        if not request_id:
+                            return PermissionResultDeny(
+                                message="Failed to create user input request"
+                            )
+                        result = await self.user_input_client.wait_for_answer(
+                            request_id=request_id,
+                            timeout_seconds=60,
+                        )
+                    except Exception:
+                        return PermissionResultDeny(
+                            message="User input handling failed"
+                        )
+
+                    if not result or result.get("answers") is None:
+                        return PermissionResultDeny(message="User input timeout")
+
+                    return PermissionResultAllow(
+                        updated_input={
+                            "questions": input_data.get("questions", []),
+                            "answers": result.get("answers", {}),
+                        }
                     )
-                except Exception:
-                    return PermissionResultDeny(message="User input handling failed")
 
-                if not result or result.get("answers") is None:
-                    return PermissionResultDeny(message="User input timeout")
+                if tool_name == "ExitPlanMode":
+                    # Ask the user to approve the plan (UX shows a dedicated card in the frontend).
+                    try:
+                        plan_expires_at = (
+                            datetime.now(timezone.utc) + timedelta(minutes=10)
+                        ).isoformat()
+                        request_payload = {
+                            "session_id": self.session_id,
+                            "tool_name": tool_name,
+                            "tool_input": input_data,
+                            "expires_at": plan_expires_at,
+                        }
+                        created = await self.user_input_client.create_request(
+                            request_payload
+                        )
+                        request_id = created.get("id")
+                        if not request_id:
+                            return PermissionResultDeny(
+                                message="Failed to create plan approval request"
+                            )
+                        result = await self.user_input_client.wait_for_answer(
+                            request_id=request_id,
+                            timeout_seconds=600,
+                        )
+                    except Exception:
+                        return PermissionResultDeny(
+                            message="Plan approval handling failed"
+                        )
 
-                return PermissionResultAllow(
-                    updated_input={
-                        "questions": input_data.get("questions", []),
-                        "answers": result.get("answers", {}),
-                    }
-                )
+                    if not result or result.get("answers") is None:
+                        return PermissionResultDeny(
+                            message="Plan approval timeout",
+                            interrupt=True,
+                        )
+
+                    # Strict protocol: only treat answers["approved"] == "true" as approved.
+                    answers = result.get("answers") or {}
+                    approved_raw = answers.get("approved")
+                    approved = (
+                        isinstance(approved_raw, str)
+                        and approved_raw.strip().lower() == "true"
+                    )
+                    if not approved:
+                        return PermissionResultDeny(
+                            message="Plan not approved",
+                            interrupt=True,
+                        )
+
+                    plan_approved = True
+                    return PermissionResultAllow(updated_input=input_data)
+
+                return PermissionResultAllow(updated_input=input_data)
 
             options = ClaudeAgentOptions(
                 cwd=ctx.cwd,
@@ -135,9 +225,17 @@ class AgentExecutor:
                 # Load both user-level (~/.claude) and project-level (.claude) settings.
                 # Skills are staged into user-level ~/.claude/skills (symlinked to /workspace/.claude_data).
                 setting_sources=["user", "project"],
-                allowed_tools=["Skill", "Read", "Write", "Bash", "TodoWrite"],
+                allowed_tools=[
+                    "Skill",
+                    "Read",
+                    "Write",
+                    "Bash",
+                    "TodoWrite",
+                    "Grep",
+                    "Glob",
+                ],
                 mcp_servers=config.mcp_config,
-                permission_mode="default",
+                permission_mode=normalized_permission_mode,
                 model=os.environ["DEFAULT_MODEL"],
                 can_use_tool=can_use_tool,
                 hooks={"PreToolUse": [HookMatcher(matcher=None, hooks=[dummy_hook])]},

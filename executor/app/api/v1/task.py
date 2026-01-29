@@ -62,6 +62,11 @@ async def run_task(req: TaskRun, background_tasks: BackgroundTasks) -> dict:
         },
     )
 
-    background_tasks.add_task(executor.execute, prompt=req.prompt, config=req.config)
+    background_tasks.add_task(
+        executor.execute,
+        prompt=req.prompt,
+        config=req.config,
+        permission_mode=req.permission_mode,
+    )
 
     return {"status": "accepted", "session_id": req.session_id}

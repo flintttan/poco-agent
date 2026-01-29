@@ -185,6 +185,7 @@ class RunPullService:
         prompt = claim.get("prompt") or ""
         config_snapshot = claim.get("config_snapshot") or {}
         sdk_session_id = None if scheduled_task_id else claim.get("sdk_session_id")
+        permission_mode = str(run.get("permission_mode") or "default").strip()
 
         if not run_id or not session_id or not user_id or not prompt:
             logger.error(f"Invalid claim payload: {claim}")
@@ -302,6 +303,7 @@ class RunPullService:
                 config=resolved_config,
                 callback_base_url=self.settings.callback_base_url,
                 sdk_session_id=sdk_session_id,
+                permission_mode=permission_mode,
             )
             logger.info(
                 "timing",
