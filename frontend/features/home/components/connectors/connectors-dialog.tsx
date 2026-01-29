@@ -87,7 +87,7 @@ export function ConnectorsDialog({
                         value="skill"
                         className="rounded-lg border border-transparent px-4 py-2 text-sm font-medium text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/20 hover:text-foreground transition-all"
                       >
-                        Skill
+                        Skills
                       </TabsTrigger>
                     </TabsList>
                   </Tabs>

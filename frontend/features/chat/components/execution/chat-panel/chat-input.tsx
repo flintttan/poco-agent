@@ -1,15 +1,14 @@
 import { useState, useCallback, useRef } from "react";
-import { SendHorizontal, Plus, Loader2, FileText, Figma } from "lucide-react";
+import { SendHorizontal, Plus, Loader2 } from "lucide-react";
 import { uploadAttachment } from "@/features/attachments/services/attachment-service";
 import type { InputFile } from "@/features/chat/types";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { FileCard } from "@/components/shared/file-card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useT } from "@/lib/i18n/client";
 import { playFileUploadSound } from "@/lib/utils/sound";
 
@@ -80,7 +79,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
     if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(`文件过大，最大支持 100MB`);
+      toast.error(t("hero.toasts.fileTooLarge", "文件过大，最大支持 100MB"));
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -91,11 +90,11 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
       setIsUploading(true);
       const uploadedFile = await uploadAttachment(file);
       setAttachments((prev) => [...prev, uploadedFile]);
-      toast.success("文件上传成功");
+      toast.success(t("hero.toasts.uploadSuccess", "文件上传成功"));
       playFileUploadSound(); // Play sound on successful upload
     } catch (error) {
       console.error("Upload failed:", error);
-      toast.error("文件上传失败");
+      toast.error(t("hero.toasts.uploadFailed", "文件上传失败"));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -129,11 +128,14 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
         </div>
       )}
       <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Tooltip>
+          <TooltipTrigger asChild>
             <button
+              type="button"
               disabled={disabled || isUploading}
-              className="flex-shrink-0 flex items-center justify-center size-8 rounded-md hover:bg-muted text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-shrink-0 flex items-center justify-center size-8 rounded-md hover:bg-accent text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label={t("hero.importLocal")}
             >
               {isUploading ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -141,24 +143,11 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
                 <Plus className="size-4" />
               )}
             </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            <DropdownMenuItem
-              onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer"
-            >
-              <FileText className="mr-2 size-4" />
-              <span>从本地文件导入</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              disabled
-              className="opacity-50 cursor-not-allowed"
-            >
-              <Figma className="mr-2 size-4" />
-              <span>从 Figma 导入 (即将推出)</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={8}>
+            {t("hero.importLocal")}
+          </TooltipContent>
+        </Tooltip>
 
         <textarea
           value={value}

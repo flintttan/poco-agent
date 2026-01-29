@@ -21,6 +21,10 @@ i18next
     lng: undefined,
     fallbackNS: defaultNS,
     defaultNS,
+    interpolation: {
+      // React already escapes values, so we disable i18next escaping to avoid double-escaping.
+      escapeValue: false,
+    },
     detection: {
       order: ["path", "htmlTag", "cookie", "navigator"],
     },

@@ -167,11 +167,18 @@ export const chatService = {
     prompt: string,
     config?: TaskConfig | null,
     projectId?: string | null,
+    schedule?: {
+      schedule_mode?: string;
+      timezone?: string;
+      scheduled_at?: string;
+    },
   ): Promise<TaskEnqueueResponse> => {
     return chatService.enqueueTask({
       prompt,
       config,
-      schedule_mode: "immediate",
+      schedule_mode: schedule?.schedule_mode || "immediate",
+      timezone: schedule?.timezone,
+      scheduled_at: schedule?.scheduled_at,
       project_id: projectId,
     });
   },

@@ -61,6 +61,32 @@
       "branchLabel": "Branch",
       "branchPlaceholder": "e.g. main"
     },
+    "runSchedule": {
+      "toggle": "Run time",
+      "dialogTitle": "Run time",
+      "fields": {
+        "mode": "Mode",
+        "scheduledAt": "Run at"
+      },
+      "modes": {
+        "immediate": "Run now",
+        "scheduled": "Run once at a specific time",
+        "nightly": "Run once overnight"
+      },
+      "timezoneHint": "Timezone: {{timezone}}",
+      "preview": "Will run: {{summary}}",
+      "summary": {
+        "immediate": "Run now",
+        "scheduled": "{{datetime}} ({{timezone}})",
+        "nightly": "Overnight (nightly window)"
+      },
+      "badge": {
+        "immediate": "Run now",
+        "scheduled": "Scheduled: {{datetime}}",
+        "scheduledEmpty": "Scheduled: not set",
+        "nightly": "Overnight"
+      }
+    },
     "toasts": {
       "uploadSuccess": "File uploaded successfully",
       "uploadFailed": "File upload failed",
@@ -219,9 +245,9 @@
     "subtitle": "Manage your skills, plugins and scheduled tasks",
     "comingSoon": "Coming Soon",
     "skillsStore": {
-      "title": "Skills Store",
+      "title": "Skills",
       "description": "Browse and install community-contributed AI skills",
-      "feature1": "Rich skill library",
+      "feature1": "Rich skills library",
       "feature2": "One-click installation",
       "feature3": "Custom configuration",
       "action": "Browse Skills",
@@ -232,7 +258,7 @@
       "hasConfig": "Configurable"
     },
     "mcpInstall": {
-      "title": "MCP Install",
+      "title": "MCP",
       "description": "Manage and configure Model Context Protocol servers",
       "feature1": "Quick MCP deployment",
       "feature2": "Visual management",
@@ -299,7 +325,7 @@
     },
     "tags": {
       "system": "Preset",
-      "user": "My Skill"
+      "user": "My Skills"
     },
     "actions": {
       "processing": "Processing…"
@@ -341,6 +367,49 @@
         "deleted": "Scheduled task deleted",
         "triggered": "Triggered",
         "error": "Operation failed, please try again later"
+      },
+      "schedule": {
+        "dialogTitle": "Scheduled Task Settings",
+        "repeat": "Schedule",
+        "repeatOptions": {
+          "interval": "Every",
+          "daily": "Daily",
+          "weekly": "Weekly",
+          "monthly": "Monthly"
+        },
+        "interval": {
+          "every": "Every",
+          "unitMinute": "minute(s)",
+          "unitHour": "hour(s)"
+        },
+        "time": "Time",
+        "weekdays": {
+          "label": "Weekdays",
+          "short": {
+            "0": "Sun",
+            "1": "Mon",
+            "2": "Tue",
+            "3": "Wed",
+            "4": "Thu",
+            "5": "Fri",
+            "6": "Sat"
+          }
+        },
+        "monthDay": "Day",
+        "preview": "Will run: {{summary}}",
+        "advanced": "Advanced",
+        "useCron": "Use Cron Expression",
+        "useCronHelp": "When enabled, the cron expression overrides the schedule above.",
+        "cronPlaceholder": "e.g. */5 * * * *",
+        "cronHelp": "Cron expression (5 fields: min hour day month weekday).",
+        "summary": {
+          "intervalMinutes": "Every {{count}} minute(s)",
+          "intervalHours": "Every {{count}} hour(s)",
+          "daily": "Daily at {{time}}",
+          "weekly": "Weekly on {{days}} at {{time}}",
+          "monthly": "Monthly on day {{day}} at {{time}}",
+          "cron": "Cron: {{cron}}"
+        }
       }
     },
     "more": {
@@ -353,7 +422,7 @@
     },
     "skillsPage": {
       "header": {
-        "title": "Skills Store",
+        "title": "Skills",
         "subtitle": "Explore and manage AI capabilities"
       },
       "items": {

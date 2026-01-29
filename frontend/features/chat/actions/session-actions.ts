@@ -28,6 +28,9 @@ const createSessionSchema = z
     prompt: z.string(),
     config: configSchema.optional(),
     projectId: z.string().uuid().optional(),
+    schedule_mode: z.enum(["immediate", "scheduled", "nightly"]).optional(),
+    timezone: z.string().optional().nullable(),
+    scheduled_at: z.string().optional().nullable(),
   })
   .refine(
     (data) => {
@@ -38,6 +41,26 @@ const createSessionSchema = z
     {
       message: "请输入任务内容",
       path: ["prompt"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.schedule_mode !== "scheduled") return true;
+      return Boolean((data.scheduled_at || "").trim());
+    },
+    {
+      message: "请选择执行时间",
+      path: ["scheduled_at"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.schedule_mode !== "nightly") return true;
+      return !data.scheduled_at;
+    },
+    {
+      message: "夜间执行不支持设置执行时间",
+      path: ["scheduled_at"],
     },
   );
 
@@ -61,7 +84,8 @@ export type CreateSessionInput = z.infer<typeof createSessionSchema>;
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
 
 export async function createSessionAction(input: CreateSessionInput) {
-  const { prompt, config, projectId } = createSessionSchema.parse(input);
+  const { prompt, config, projectId, schedule_mode, timezone, scheduled_at } =
+    createSessionSchema.parse(input);
   const hasInputFiles = Boolean(config?.input_files?.length);
   const finalPrompt =
     prompt.trim() || (hasInputFiles ? "Uploaded files" : prompt);
@@ -69,6 +93,11 @@ export async function createSessionAction(input: CreateSessionInput) {
     finalPrompt,
     config,
     projectId,
+    {
+      schedule_mode,
+      timezone: timezone || undefined,
+      scheduled_at: scheduled_at || undefined,
+    },
   );
   return {
     sessionId: result.session_id,

@@ -280,13 +280,17 @@ export function CardNav({
     const toggleFn = type === "mcp" ? toggleMcpEnabled : toggleSkillEnabled;
 
     return (
-      <div className="flex flex-col gap-1.5 max-h-[180px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/40 scrollbar-track-muted/30 hover:scrollbar-thumb-muted-foreground/60">
-        {items.map((item) => (
+      <div className="flex flex-col gap-1 max-h-[180px] overflow-y-auto -mr-1 pr-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 transition-colors">
+        {items.map((item, index) => (
           <button
             key={item.id}
+            style={{
+              animationDelay: `${index * 30}ms`,
+              animationFillMode: "both",
+            }}
             className={cn(
-              "flex items-center gap-2 p-2 text-xs font-medium rounded-md border transition-all text-left w-full cursor-pointer",
-              "bg-muted/40 text-muted-foreground border-border/40 hover:bg-muted/60 hover:border-border/60",
+              "group/item flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all duration-200 text-left w-full cursor-pointer select-none animate-in fade-in slide-in-from-left-1",
+              "text-muted-foreground hover:text-foreground hover:bg-muted/60 active:bg-muted/80",
             )}
             onClick={(e) => {
               e.stopPropagation();
@@ -294,15 +298,17 @@ export function CardNav({
             }}
             type="button"
           >
-            <span
+            <div
               className={cn(
-                "w-2.5 h-2.5 rounded-full flex-shrink-0 transition-all",
+                "w-2 h-2 rounded-full transition-all duration-300 flex-shrink-0",
                 item.enabled
-                  ? "bg-primary shadow-sm"
-                  : "bg-zinc-400 dark:bg-zinc-500",
+                  ? "bg-primary shadow-[0_0_6px_-1px_hsl(var(--primary)/0.6)] scale-100"
+                  : "bg-muted-foreground/30 scale-90 group-hover/item:bg-muted-foreground/50",
               )}
             />
-            <span className="flex-1 truncate">{item.name}</span>
+            <span className="flex-1 truncate tracking-tight opacity-90 group-hover/item:opacity-100">
+              {item.name}
+            </span>
           </button>
         ))}
       </div>
@@ -376,7 +382,7 @@ export function CardNav({
                   type="button"
                 >
                   <span className="text-base font-semibold tracking-[-0.01em] text-foreground">
-                    Skill
+                    Skills
                   </span>
                   <ChevronRight className="size-3.5 text-muted-foreground transition-transform duration-200 hover:translate-x-0.5" />
                 </button>

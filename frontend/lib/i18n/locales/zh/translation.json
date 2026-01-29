@@ -61,6 +61,32 @@
       "branchLabel": "分支",
       "branchPlaceholder": "例如：main"
     },
+    "runSchedule": {
+      "toggle": "发送时间",
+      "dialogTitle": "发送时间",
+      "fields": {
+        "mode": "执行方式",
+        "scheduledAt": "执行时间"
+      },
+      "modes": {
+        "immediate": "立即执行",
+        "scheduled": "指定时间执行一次",
+        "nightly": "夜间执行一次"
+      },
+      "timezoneHint": "时区：{{timezone}}",
+      "preview": "将按：{{summary}} 执行",
+      "summary": {
+        "immediate": "立即执行",
+        "scheduled": "{{datetime}}（{{timezone}}）",
+        "nightly": "夜间执行（系统夜间窗口）"
+      },
+      "badge": {
+        "immediate": "立即执行",
+        "scheduled": "定时：{{datetime}}",
+        "scheduledEmpty": "定时：未选择时间",
+        "nightly": "夜间执行"
+      }
+    },
     "toasts": {
       "uploadSuccess": "文件上传成功",
       "uploadFailed": "文件上传失败",
@@ -219,7 +245,7 @@
     "subtitle": "管理您的技能、插件和定时任务",
     "comingSoon": "即将推出",
     "skillsStore": {
-      "title": "Skills Store",
+      "title": "Skills",
       "description": "浏览和安装社区贡献的 AI 技能",
       "feature1": "丰富的技能库",
       "feature2": "一键安装",
@@ -232,7 +258,7 @@
       "hasConfig": "可配置"
     },
     "mcpInstall": {
-      "title": "MCP 安装",
+      "title": "MCP",
       "description": "管理和配置 Model Context Protocol 服务器",
       "feature1": "快速部署 MCP 服务器",
       "feature2": "可视化管理",
@@ -341,6 +367,49 @@
         "deleted": "定时任务已删除",
         "triggered": "已触发执行",
         "error": "操作失败，请稍后重试"
+      },
+      "schedule": {
+        "dialogTitle": "定时任务设置",
+        "repeat": "计划",
+        "repeatOptions": {
+          "interval": "每隔",
+          "daily": "每天",
+          "weekly": "每周",
+          "monthly": "每月"
+        },
+        "interval": {
+          "every": "间隔",
+          "unitMinute": "分钟",
+          "unitHour": "小时"
+        },
+        "time": "时间",
+        "weekdays": {
+          "label": "星期",
+          "short": {
+            "0": "日",
+            "1": "一",
+            "2": "二",
+            "3": "三",
+            "4": "四",
+            "5": "五",
+            "6": "六"
+          }
+        },
+        "monthDay": "日期",
+        "preview": "将按：{{summary}} 执行",
+        "advanced": "高级设置",
+        "useCron": "使用 Cron 表达式",
+        "useCronHelp": "开启后将以 Cron 为准，忽略上面的计划设置。",
+        "cronPlaceholder": "例如：*/5 * * * *",
+        "cronHelp": "Cron 表达式（5 段：分 时 日 月 周）。",
+        "summary": {
+          "intervalMinutes": "每 {{count}} 分钟",
+          "intervalHours": "每 {{count}} 小时",
+          "daily": "每天 {{time}}",
+          "weekly": "每周 {{days}} {{time}}",
+          "monthly": "每月 {{day}} 日 {{time}}",
+          "cron": "Cron：{{cron}}"
+        }
       }
     },
     "more": {
@@ -353,7 +422,7 @@
     },
     "skillsPage": {
       "header": {
-        "title": "技能商店",
+        "title": "Skills",
         "subtitle": "探索和管理 AI 能力"
       },
       "items": {

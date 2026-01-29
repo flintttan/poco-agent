@@ -5,29 +5,22 @@ import {
   ArrowUp,
   Mic,
   Plus,
-  FileText,
-  Figma,
   GitBranch,
   ListTodo,
   SquareTerminal,
   Clock,
+  AlarmClock,
 } from "lucide-react";
 import { toast } from "sonner";
 import * as React from "react";
 import { useT } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { FileCard } from "@/components/shared/file-card";
 import { playFileUploadSound } from "@/lib/utils/sound";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -40,6 +33,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScheduledTaskSettingsDialog } from "@/features/scheduled-tasks/components/scheduled-task-settings-dialog";
+import {
+  formatScheduleSummary,
+  inferScheduleFromCron,
+} from "@/features/scheduled-tasks/utils/schedule";
+import {
+  RunScheduleDialog,
+  type RunScheduleMode,
+} from "@/features/home/components/run-schedule-dialog";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
@@ -49,6 +51,11 @@ export interface TaskSendOptions {
   attachments?: InputFile[];
   repo_url?: string | null;
   git_branch?: string | null;
+  run_schedule?: {
+    schedule_mode: RunScheduleMode;
+    timezone: string;
+    scheduled_at: string | null;
+  } | null;
   scheduled_task?: {
     name: string;
     cron: string;
@@ -89,6 +96,16 @@ export function TaskComposer({
   const [repoUrl, setRepoUrl] = React.useState("");
   const [gitBranch, setGitBranch] = React.useState("main");
 
+  const [runScheduleOpen, setRunScheduleOpen] = React.useState(false);
+  const [runScheduleMode, setRunScheduleMode] =
+    React.useState<RunScheduleMode>("immediate");
+  const [runScheduledAt, setRunScheduledAt] = React.useState<string | null>(
+    null,
+  );
+  const [runTimezone, setRunTimezone] = React.useState("UTC");
+
+  const [scheduledSettingsOpen, setScheduledSettingsOpen] =
+    React.useState(false);
   const [scheduledName, setScheduledName] = React.useState("");
   const [scheduledCron, setScheduledCron] = React.useState("*/5 * * * *");
   const [scheduledTimezone, setScheduledTimezone] = React.useState("UTC");
@@ -100,6 +117,7 @@ export function TaskComposer({
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       if (tz) setScheduledTimezone(tz);
+      if (tz) setRunTimezone(tz);
     } catch {
       // Ignore and keep UTC as fallback.
     }
@@ -112,6 +130,25 @@ export function TaskComposer({
     const derived = value.trim().slice(0, 32);
     if (derived) setScheduledName(derived);
   }, [mode, scheduledName, value]);
+
+  const scheduledSummary = React.useMemo(() => {
+    const inferred = inferScheduleFromCron(scheduledCron);
+    return formatScheduleSummary(inferred, t);
+  }, [scheduledCron, t]);
+
+  const runScheduleSummary = React.useMemo(() => {
+    if (runScheduleMode === "nightly")
+      return t("hero.runSchedule.badge.nightly");
+    if (runScheduleMode === "scheduled") {
+      const dt = (runScheduledAt || "").trim();
+      return dt
+        ? t("hero.runSchedule.badge.scheduled", {
+            datetime: dt.replace("T", " "),
+          })
+        : t("hero.runSchedule.badge.scheduledEmpty");
+    }
+    return t("hero.runSchedule.badge.immediate");
+  }, [runScheduleMode, runScheduledAt, t]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -188,12 +225,26 @@ export function TaskComposer({
       if (!name) return;
     } else {
       if (!value.trim() && attachments.length === 0) return;
+      if (runScheduleMode === "scheduled" && !(runScheduledAt || "").trim()) {
+        return;
+      }
     }
 
     const payload: TaskSendOptions = {
       attachments,
       repo_url: repoUrl.trim() || null,
       git_branch: gitBranch.trim() || null,
+      run_schedule:
+        mode === "scheduled"
+          ? null
+          : {
+              schedule_mode: runScheduleMode,
+              timezone: runTimezone.trim() || "UTC",
+              scheduled_at:
+                runScheduleMode === "scheduled"
+                  ? (runScheduledAt || "").trim()
+                  : null,
+            },
       scheduled_task:
         mode === "scheduled"
           ? {
@@ -208,6 +259,8 @@ export function TaskComposer({
 
     onSend(payload);
     setAttachments([]);
+    setRunScheduleMode("immediate");
+    setRunScheduledAt(null);
   }, [
     attachments,
     gitBranch,
@@ -216,6 +269,9 @@ export function TaskComposer({
     mode,
     onSend,
     repoUrl,
+    runScheduleMode,
+    runScheduledAt,
+    runTimezone,
     scheduledCron,
     scheduledEnabled,
     scheduledName,
@@ -289,6 +345,40 @@ export function TaskComposer({
         </DialogContent>
       </Dialog>
 
+      <ScheduledTaskSettingsDialog
+        open={scheduledSettingsOpen}
+        onOpenChange={setScheduledSettingsOpen}
+        value={{
+          name: scheduledName,
+          cron: scheduledCron,
+          timezone: scheduledTimezone,
+          enabled: scheduledEnabled,
+          reuse_session: scheduledReuseSession,
+        }}
+        onSave={(next) => {
+          setScheduledName(next.name);
+          setScheduledCron(next.cron);
+          setScheduledTimezone(next.timezone);
+          setScheduledEnabled(next.enabled);
+          setScheduledReuseSession(next.reuse_session);
+        }}
+      />
+
+      <RunScheduleDialog
+        open={runScheduleOpen}
+        onOpenChange={setRunScheduleOpen}
+        value={{
+          schedule_mode: runScheduleMode,
+          timezone: runTimezone,
+          scheduled_at: runScheduledAt,
+        }}
+        onSave={(next) => {
+          setRunScheduleMode(next.schedule_mode);
+          setRunTimezone(next.timezone);
+          setRunScheduledAt(next.scheduled_at);
+        }}
+      />
+
       {/* 输入区域 */}
       <div className="px-4 pb-3 pt-4">
         <Textarea
@@ -334,59 +424,74 @@ export function TaskComposer({
         />
       </div>
 
-      {/* Scheduled Task Settings */}
+      {mode !== "scheduled" && runScheduleMode !== "immediate" ? (
+        <div className="px-4 pb-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              variant="secondary"
+              role="button"
+              tabIndex={0}
+              className="cursor-pointer select-none"
+              onClick={() => setRunScheduleOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setRunScheduleOpen(true);
+                }
+              }}
+              aria-label={t("hero.runSchedule.toggle")}
+              title={t("hero.runSchedule.toggle")}
+            >
+              <AlarmClock className="size-3" />
+              {runScheduleSummary}
+            </Badge>
+          </div>
+        </div>
+      ) : null}
+
       {mode === "scheduled" ? (
         <div className="px-4 pb-3">
-          <div className="rounded-xl border border-border bg-muted/20 p-3">
-            {/* Row 1: Name + Cron */}
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="st-name-inline">
-                  {t("library.scheduledTasks.fields.name")}
-                </Label>
-                <Input
-                  id="st-name-inline"
-                  value={scheduledName}
-                  onChange={(e) => setScheduledName(e.target.value)}
-                  placeholder={t("library.scheduledTasks.placeholders.name")}
-                />
-              </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              variant="secondary"
+              role="button"
+              tabIndex={0}
+              className="cursor-pointer select-none"
+              onClick={() => setScheduledSettingsOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setScheduledSettingsOpen(true);
+                }
+              }}
+              aria-label={t("hero.modes.scheduled")}
+              title={t("hero.modes.scheduled")}
+            >
+              <Clock className="size-3" />
+              {scheduledSummary}
+            </Badge>
 
-              <div className="space-y-2">
-                <Label htmlFor="st-cron-inline">
-                  {t("library.scheduledTasks.fields.cron")}
-                </Label>
-                <Input
-                  id="st-cron-inline"
-                  value={scheduledCron}
-                  onChange={(e) => setScheduledCron(e.target.value)}
-                  placeholder={"*/5 * * * *"}
-                />
-              </div>
-            </div>
-
-            {/* Row 2: Toggles */}
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
-              <div className="flex items-center justify-between rounded-md border border-border bg-background/60 p-3">
-                <div className="text-sm font-medium">
-                  {t("library.scheduledTasks.fields.enabled")}
-                </div>
-                <Switch
-                  checked={scheduledEnabled}
-                  onCheckedChange={setScheduledEnabled}
-                />
-              </div>
-
-              <div className="flex items-center justify-between rounded-md border border-border bg-background/60 p-3">
-                <div className="text-sm font-medium">
-                  {t("library.scheduledTasks.fields.reuseSession")}
-                </div>
-                <Switch
-                  checked={scheduledReuseSession}
-                  onCheckedChange={setScheduledReuseSession}
-                />
-              </div>
-            </div>
+            {(scheduledName || "").trim().length > 0 ? (
+              <Badge
+                variant="outline"
+                role="button"
+                tabIndex={0}
+                className="cursor-pointer select-none max-w-full"
+                onClick={() => setScheduledSettingsOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setScheduledSettingsOpen(true);
+                  }
+                }}
+                title={(scheduledName || "").trim()}
+                aria-label={t("library.scheduledTasks.fields.name")}
+              >
+                <span className="max-w-[260px] truncate">
+                  {(scheduledName || "").trim()}
+                </span>
+              </Badge>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -448,7 +553,11 @@ export function TaskComposer({
                   className={`rounded-xl ${mode === "scheduled" ? "bg-primary/20 text-primary hover:bg-primary/30" : ""}`}
                   aria-label={t("hero.modes.scheduled")}
                   title={t("hero.modes.scheduled")}
-                  onClick={() => onModeChange("scheduled")}
+                  onClick={() => {
+                    onModeChange("scheduled");
+                    // Open the schedule dialog directly to avoid occupying the composer UI.
+                    requestAnimationFrame(() => setScheduledSettingsOpen(true));
+                  }}
                 >
                   <Clock className="size-4" />
                 </Button>
@@ -487,15 +596,40 @@ export function TaskComposer({
             </TooltipContent>
           </Tooltip>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {mode !== "scheduled" ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant={
+                    runScheduleMode !== "immediate" ? "secondary" : "ghost"
+                  }
+                  size="icon"
+                  disabled={isSubmitting || isUploading}
+                  className="size-9 rounded-xl hover:bg-accent"
+                  aria-label={t("hero.runSchedule.toggle")}
+                  title={t("hero.runSchedule.toggle")}
+                  onClick={() => setRunScheduleOpen(true)}
+                >
+                  <AlarmClock className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={8}>
+                {t("hero.runSchedule.toggle")}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
+
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
                 disabled={isSubmitting || isUploading}
                 className="size-9 rounded-xl hover:bg-accent"
-                title={t("hero.attachFile")}
+                aria-label={t("hero.importLocal")}
+                onClick={() => fileInputRef.current?.click()}
               >
                 {isUploading ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -503,24 +637,11 @@ export function TaskComposer({
                   <Plus className="size-4" />
                 )}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem
-                onClick={() => fileInputRef.current?.click()}
-                className="cursor-pointer"
-              >
-                <FileText className="mr-2 size-4" />
-                <span>{t("hero.importLocal")}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled
-                className="opacity-50 cursor-not-allowed"
-              >
-                <Figma className="mr-2 size-4" />
-                <span>{t("hero.importFigma")}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={8}>
+              {t("hero.importLocal")}
+            </TooltipContent>
+          </Tooltip>
 
           <Button
             type="button"
@@ -537,7 +658,9 @@ export function TaskComposer({
             disabled={
               (mode === "scheduled"
                 ? !value.trim() || !scheduledCron.trim()
-                : !value.trim() && attachments.length === 0) ||
+                : (!value.trim() && attachments.length === 0) ||
+                  (runScheduleMode === "scheduled" &&
+                    !(runScheduledAt || "").trim())) ||
               isSubmitting ||
               isUploading
             }

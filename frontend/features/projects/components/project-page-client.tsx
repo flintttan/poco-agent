@@ -53,6 +53,7 @@ export function ProjectPageClient({ projectId }: ProjectPageClientProps) {
       const inputFiles = options?.attachments ?? [];
       const repoUrl = (options?.repo_url || "").trim();
       const gitBranch = (options?.git_branch || "").trim() || "main";
+      const runSchedule = options?.run_schedule ?? null;
       const scheduledTask = options?.scheduled_task ?? null;
       if (
         (mode === "scheduled"
@@ -110,6 +111,9 @@ export function ProjectPageClient({ projectId }: ProjectPageClientProps) {
           prompt: finalPrompt,
           projectId,
           config: Object.keys(config).length > 0 ? config : undefined,
+          schedule_mode: runSchedule?.schedule_mode,
+          timezone: runSchedule?.timezone,
+          scheduled_at: runSchedule?.scheduled_at,
         });
         console.log("session", session);
 
