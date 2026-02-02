@@ -27,7 +27,7 @@ ONLY_RUSTFS=false
 INIT_BUCKET=true
 PULL_EXECUTOR=true
 FORCE_ENV=false
-INTERACTIVE=false
+INTERACTIVE=true
 ANTHROPIC_KEY=""
 OPENAI_KEY=""
 ANTHROPIC_BASE_URL=""
@@ -47,7 +47,8 @@ usage() {
 Usage: scripts/quickstart.sh [options]
 
 Options:
-  -i, --interactive         Interactive mode for API keys setup (recommended)
+  -i, --interactive         Interactive mode (default when run in a terminal)
+  --non-interactive         Disable interactive prompts (recommended for CI)
   --no-start                Only prepare env and directories
   --force-env               Overwrite existing keys in env file
   --anthropic-key KEY       Anthropic API key (writes to env)
@@ -72,14 +73,14 @@ Advanced options:
   --no-pull-executor        Skip pulling executor image
 
 Examples:
-  # Interactive setup (recommended)
-  ./scripts/quickstart.sh -i
+  # Interactive setup (default)
+  ./scripts/quickstart.sh
 
   # Interactive setup without starting services
-  ./scripts/quickstart.sh -i --no-start
+  ./scripts/quickstart.sh --no-start
 
   # Quick setup with API keys via CLI
-  ./scripts/quickstart.sh --anthropic-key sk-ant-xxx
+  ./scripts/quickstart.sh --non-interactive --anthropic-key sk-ant-xxx
 USAGE
 }
 
@@ -190,6 +191,17 @@ read_env_key() {
       value="${value#\"}"
       value="${value%\'}"
       value="${value#\'}"
+      # Treat empty values as "not set" to avoid false positives (e.g. KEY=).
+      if [[ -z "$value" ]]; then
+        return 1
+      fi
+      # Treat example placeholders as "not set".
+      if [[ "$key" == "ANTHROPIC_AUTH_TOKEN" && "$value" == "sk-ant-xxxxx" ]]; then
+        return 1
+      fi
+      if [[ "$key" == "OPENAI_API_KEY" && "$value" == "sk-xxxxx" ]]; then
+        return 1
+      fi
       echo "$value"
       return 0
     fi
@@ -203,11 +215,13 @@ write_env_key() {
   if [[ -z "$key" ]]; then
     return
   fi
-  if [[ -f "$ENV_FILE" ]]; then
-    if grep -qE "^${key}=" "$ENV_FILE"; then
-      if [[ "$FORCE_ENV" = false ]]; then
-        return
-      fi
+  # Skip overwriting existing non-empty values unless --force-env is set.
+  # This still allows writing when the key exists but is empty / placeholder.
+  if [[ "$FORCE_ENV" = false ]]; then
+    local existing_value
+    existing_value="$(read_env_key "$key" || true)"
+    if [[ -n "$existing_value" ]]; then
+      return 0
     fi
   fi
   local tmp_file
@@ -245,13 +259,15 @@ prompt_for_key() {
       echo -e "${GREEN}Current value:${NC} ${current_value:0:8}...${current_value: -4}"
       echo -n "Keep current? [Y/n/new]: "
       read -r keep_current
-      if [[ "$keep_current" =~ ^[Yy]*$|^$ ]]; then
+      if [[ "$keep_current" =~ ^[Yy]?$ ]]; then
         echo "$current_value"
         return
-      elif [[ "$keep_current" == "new" ]]; then
+      elif [[ "$keep_current" =~ ^[Nn]$|^new$ ]]; then
         current_value=""
+        continue
       else
-        break
+        print_warn "Please enter Y, n, or new"
+        continue
       fi
     fi
 
@@ -530,6 +546,8 @@ while [[ $# -gt 0 ]]; do
       FORCE_ENV=true; shift ;;
     -i|--interactive)
       INTERACTIVE=true; shift ;;
+    --non-interactive|--no-interactive)
+      INTERACTIVE=false; shift ;;
     --anthropic-key)
       ANTHROPIC_KEY="$2"; shift 2 ;;
     --openai-key)
@@ -553,6 +571,12 @@ if [[ ! -f "$ENV_FILE" ]]; then
   else
     touch "$ENV_FILE"
   fi
+fi
+
+# Avoid hanging in non-interactive environments (e.g. CI) even if interactive is the default.
+if [[ "$INTERACTIVE" = true ]] && [[ ! -t 0 ]]; then
+  warn "Interactive mode requested but stdin is not a TTY; falling back to non-interactive"
+  INTERACTIVE=false
 fi
 
 # Run interactive setup if requested
@@ -626,6 +650,11 @@ chmod -R u+rwX "$DATA_DIR_ABS" 2>/dev/null || \
 chmod -R u+rwX "$WORKSPACE_DIR_ABS" 2>/dev/null || \
   warn "Failed to chmod workspace directories. You may need to run: sudo chown -R \"$(id -u)\":\"$(id -g)\" \"$WORKSPACE_DIR_ABS\""
 
+if [[ "$START_ALL" = true ]] && ! read_env_key "ANTHROPIC_AUTH_TOKEN" >/dev/null 2>&1; then
+  print_error "ANTHROPIC_AUTH_TOKEN is not set. Run ./scripts/quickstart.sh (interactive) or pass --anthropic-key."
+  exit 1
+fi
+
 if [[ "$START_ALL" = true ]]; then
   require_cmd docker
   if docker compose version >/dev/null 2>&1; then
@@ -683,7 +712,7 @@ if ! read_env_key "ANTHROPIC_AUTH_TOKEN" >/dev/null 2>&1; then
   cat <<'EOF'
 
   Please set your Anthropic API key in .env or run:
-    ./scripts/quickstart.sh -i
+    ./scripts/quickstart.sh
 
   Get your key at: https://console.anthropic.com/
 EOF

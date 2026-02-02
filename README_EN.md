@@ -74,7 +74,7 @@ Supports reading and analyzing various project files.
 Run the interactive setup script to automatically generate configuration and start services:
 
 ```bash
-./scripts/quickstart.sh -i
+./scripts/quickstart.sh
 ```
 
 Visit: http://localhost:3000 after startup completes.

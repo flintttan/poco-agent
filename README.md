@@ -74,7 +74,7 @@
 运行一键启动脚本，按提示输入 API Key，自动生成配置文件并启动服务：
 
 ```bash
-./scripts/quickstart.sh -i
+./scripts/quickstart.sh
 ```
 
 启动完成后访问：http://localhost:3000
