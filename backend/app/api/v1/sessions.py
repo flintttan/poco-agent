@@ -3,7 +3,7 @@ import json
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -22,6 +22,7 @@ from app.schemas.session import (
     SessionStateResponse,
     SessionUpdateRequest,
 )
+from app.schemas.computer import ComputerBrowserScreenshotResponse
 from app.schemas.tool_execution import ToolExecutionResponse
 from app.schemas.usage import UsageResponse
 from app.schemas.workspace import FileNode, WorkspaceArchiveResponse
@@ -30,6 +31,7 @@ from app.services.session_service import SessionService
 from app.services.storage_service import S3StorageService
 from app.services.tool_execution_service import ToolExecutionService
 from app.services.usage_service import UsageService
+from app.utils.computer import build_browser_screenshot_key
 from app.utils.workspace import build_workspace_file_nodes
 from app.utils.workspace_manifest import (
     build_nodes_from_manifest,
@@ -289,6 +291,8 @@ async def get_session_messages_with_files(
 async def get_session_tool_executions(
     session_id: uuid.UUID,
     user_id: str = Depends(get_current_user_id),
+    limit: int = Query(default=500, ge=1, le=2000),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
     """Gets all tool executions for a session."""
@@ -299,10 +303,52 @@ async def get_session_tool_executions(
             error_code=ErrorCode.FORBIDDEN,
             message="Session does not belong to the user",
         )
-    executions = tool_execution_service.get_tool_executions(db, session_id)
+    executions = tool_execution_service.get_tool_executions(
+        db,
+        session_id,
+        limit=limit,
+        offset=offset,
+    )
     return Response.success(
         data=[ToolExecutionResponse.model_validate(e) for e in executions],
         message="Tool executions retrieved successfully",
+    )
+
+
+@router.get(
+    "/{session_id}/computer/browser/{tool_use_id}",
+    response_model=ResponseSchema[ComputerBrowserScreenshotResponse],
+)
+async def get_session_browser_screenshot(
+    session_id: uuid.UUID,
+    tool_use_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """Return a presigned URL for a browser screenshot (Poco Computer)."""
+    db_session = session_service.get_session(db, session_id)
+    if db_session.user_id != user_id:
+        raise AppException(
+            error_code=ErrorCode.FORBIDDEN,
+            message="Session does not belong to the user",
+        )
+
+    key = build_browser_screenshot_key(
+        user_id=user_id,
+        session_id=str(session_id),
+        tool_use_id=tool_use_id,
+    )
+    if not storage_service.exists(key):
+        raise HTTPException(status_code=404, detail="Browser screenshot not ready")
+    url = storage_service.presign_get(
+        key,
+        response_content_disposition="inline",
+        response_content_type="image/png",
+    )
+
+    return Response.success(
+        data=ComputerBrowserScreenshotResponse(tool_use_id=tool_use_id, url=url),
+        message="Browser screenshot URL generated",
     )
 
 
