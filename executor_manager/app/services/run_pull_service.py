@@ -272,12 +272,14 @@ class RunPullService:
             )
 
             step_started = time.perf_counter()
+            browser_enabled = bool(resolved_config.get("browser_enabled"))
             (
                 executor_url,
                 container_id,
             ) = await self.container_pool.get_or_create_container(
                 session_id=session_id,
                 user_id=user_id,
+                browser_enabled=browser_enabled,
                 container_mode=container_mode,
                 container_id=container_id,
             )
@@ -288,6 +290,7 @@ class RunPullService:
                     "duration_ms": int((time.perf_counter() - step_started) * 1000),
                     "container_mode": container_mode,
                     "container_id": container_id,
+                    "browser_enabled": browser_enabled,
                     **ctx,
                 },
             )

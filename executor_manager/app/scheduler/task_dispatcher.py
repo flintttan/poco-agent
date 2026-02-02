@@ -175,9 +175,11 @@ class TaskDispatcher:
             )
 
             step_started = time.perf_counter()
+            browser_enabled = bool(resolved_config.get("browser_enabled"))
             executor_url, container_id = await container_pool.get_or_create_container(
                 session_id=session_id,
                 user_id=user_id,
+                browser_enabled=browser_enabled,
                 container_mode=container_mode,
                 container_id=container_id,
             )
@@ -191,6 +193,7 @@ class TaskDispatcher:
                     "user_id": user_id,
                     "container_id": container_id,
                     "container_mode": container_mode,
+                    "browser_enabled": browser_enabled,
                 },
             )
 

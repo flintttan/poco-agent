@@ -32,6 +32,8 @@ class ContainerPool:
         self,
         session_id: str,
         user_id: str,
+        *,
+        browser_enabled: bool = False,
         container_mode: str = "ephemeral",
         container_id: str | None = None,
     ) -> tuple[str, str]:
@@ -40,6 +42,7 @@ class ContainerPool:
         Args:
             session_id: Session ID
             user_id: User ID
+            browser_enabled: Whether this container needs the desktop/browser stack (noVNC/Chrome).
             container_mode: ephemeral | persistent
             container_id: Existing container ID to reuse
 
@@ -57,24 +60,51 @@ class ContainerPool:
             container = self.containers[container_id]
             self.session_to_container[session_id] = container_id
 
-            port_info = container.ports["8000/tcp"][0]
-            logger.info(
-                "timing",
-                extra={
-                    "step": "container_reuse_total",
-                    "duration_ms": int((time.perf_counter() - overall_started) * 1000),
-                    "session_id": session_id,
-                    "user_id": user_id,
-                    "container_id": container_id,
-                    "container_mode": container_mode,
-                },
-            )
-            return f"http://{published_host}:{port_info['HostPort']}", container_id
+            # Best-effort refresh port mappings.
+            try:
+                container.reload()
+            except Exception:
+                pass
+
+            # If the caller now requires browser support but the existing container was created
+            # without it, recreate the container (most common when upgrading a persistent container).
+            if browser_enabled and not self._is_browser_enabled_container(container):
+                logger.info(
+                    "container_reuse_mismatch_recreate",
+                    extra={
+                        "session_id": session_id,
+                        "user_id": user_id,
+                        "container_id": container_id,
+                        "container_mode": container_mode,
+                        "browser_enabled": True,
+                    },
+                )
+                await self.delete_container(container_id)
+            else:
+                port_info = container.ports["8000/tcp"][0]
+                logger.info(
+                    "timing",
+                    extra={
+                        "step": "container_reuse_total",
+                        "duration_ms": int(
+                            (time.perf_counter() - overall_started) * 1000
+                        ),
+                        "session_id": session_id,
+                        "user_id": user_id,
+                        "container_id": container_id,
+                        "container_mode": container_mode,
+                        "browser_enabled": bool(browser_enabled),
+                    },
+                )
+                return (
+                    f"http://{published_host}:{port_info['HostPort']}",
+                    container_id,
+                )
 
         container_id = f"exec-{session_id[:8]}"
         container_name = f"executor-{session_id[:8]}"
 
-        # 清理可能存在的同名容器
+        # Remove stale container with the same name (best-effort).
         step_started = time.perf_counter()
         removed_stale = False
         try:
@@ -121,11 +151,14 @@ class ContainerPool:
             "container_id": container_id,
             "user": user_id,
             "container_mode": container_mode,
+            "browser_enabled": "true" if browser_enabled else "false",
         }
 
         step_started = time.perf_counter()
+        image = self._resolve_executor_image(browser_enabled=browser_enabled)
+        ports = {"8000/tcp": None}
         container = self.docker_client.containers.run(
-            image=self.settings.executor_image,
+            image=image,
             name=container_name,
             environment={
                 "ANTHROPIC_AUTH_TOKEN": self.settings.anthropic_token,
@@ -136,7 +169,7 @@ class ContainerPool:
                 "SESSION_ID": session_id,
             },
             volumes={workspace_volume: {"bind": "/workspace", "mode": "rw"}},
-            ports={"8000/tcp": None},
+            ports=ports,
             detach=True,
             auto_remove=True,
             labels=labels,
@@ -151,7 +184,8 @@ class ContainerPool:
                 "user_id": user_id,
                 "container_id": container_id,
                 "container_name": container_name,
-                "image": self.settings.executor_image,
+                "image": image,
+                "browser_enabled": bool(browser_enabled),
             },
         )
 
@@ -201,6 +235,26 @@ class ContainerPool:
             },
         )
         return executor_url, container_id
+
+    def _resolve_executor_image(self, *, browser_enabled: bool) -> str:
+        """Pick executor image based on browser requirement."""
+        if not browser_enabled:
+            return self.settings.executor_image
+        candidate = (self.settings.executor_browser_image or "").strip()
+        if candidate:
+            return candidate
+        # Backward-compatible fallback: may not have a desktop stack, but keeps the system running.
+        logger.warning(
+            "executor_browser_image_not_configured_falling_back",
+            extra={"executor_image": self.settings.executor_image},
+        )
+        return self.settings.executor_image
+
+    @staticmethod
+    def _is_browser_enabled_container(container: "Container") -> bool:
+        labels = getattr(container, "labels", None) or {}
+        raw = str(labels.get("browser_enabled", "")).strip().lower()
+        return raw in {"true", "1", "yes"}
 
     def _wait_for_container_ready(
         self,
