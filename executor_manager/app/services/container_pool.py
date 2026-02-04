@@ -157,17 +157,22 @@ class ContainerPool:
         step_started = time.perf_counter()
         image = self._resolve_executor_image(browser_enabled=browser_enabled)
         ports = {"8000/tcp": None}
+        environment = {
+            "ANTHROPIC_AUTH_TOKEN": self.settings.anthropic_token,
+            "ANTHROPIC_BASE_URL": self.settings.anthropic_base_url,
+            "DEFAULT_MODEL": self.settings.default_model,
+            "WORKSPACE_PATH": "/workspace",
+            "USER_ID": user_id,
+            "SESSION_ID": session_id,
+        }
+        if browser_enabled:
+            environment["POCO_BROWSER_VIEWPORT_SIZE"] = (
+                self.settings.poco_browser_viewport_size
+            )
         container = self.docker_client.containers.run(
             image=image,
             name=container_name,
-            environment={
-                "ANTHROPIC_AUTH_TOKEN": self.settings.anthropic_token,
-                "ANTHROPIC_BASE_URL": self.settings.anthropic_base_url,
-                "DEFAULT_MODEL": self.settings.default_model,
-                "WORKSPACE_PATH": "/workspace",
-                "USER_ID": user_id,
-                "SESSION_ID": session_id,
-            },
+            environment=environment,
             volumes={workspace_volume: {"bind": "/workspace", "mode": "rw"}},
             ports=ports,
             detach=True,

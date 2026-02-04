@@ -101,6 +101,10 @@ class Settings(BaseSettings):
     executor_browser_image: str | None = Field(
         default="ghcr.io/poco-ai/poco-executor:full", alias="EXECUTOR_BROWSER_IMAGE"
     )
+    # Default desktop viewport used by the Playwright MCP inside executor containers.
+    poco_browser_viewport_size: str = Field(
+        default="1366x768", alias="POCO_BROWSER_VIEWPORT_SIZE"
+    )
     # When the manager spawns executor containers via the Docker daemon, it maps the executor
     # service to a host port and then calls back into it. This host must be reachable from the
     # manager process itself (e.g. "localhost" on bare-metal, or "host.docker.internal" when
