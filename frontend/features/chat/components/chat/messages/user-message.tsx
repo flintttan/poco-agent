@@ -95,8 +95,8 @@ export function UserMessage({
         </div>
       )}
       {textContent && (
-        <div className="group flex w-full min-w-0 max-w-[85%] flex-col items-end gap-2">
-          <div className="w-full min-w-0 overflow-hidden rounded-lg bg-muted px-4 py-2 text-foreground">
+        <div className="group flex min-w-0 max-w-[85%] flex-col items-end gap-2">
+          <div className="w-fit min-w-0 max-w-full overflow-hidden rounded-lg bg-muted px-4 py-2 text-foreground">
             <p
               ref={observerRef}
               className={`text-base whitespace-pre-wrap break-words break-all [overflow-wrap:anywhere] ${
