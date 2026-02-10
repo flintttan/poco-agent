@@ -34,9 +34,9 @@ Common:
 - `S3_REGION` (default `us-east-1`; Cloudflare R2 usually recommends `auto`)
 - `S3_FORCE_PATH_STYLE` (default `true` for MinIO/RustFS; Cloudflare R2 usually recommends `false`)
 - `S3_PRESIGN_EXPIRES`: presigned URL expiry in seconds (default `300`)
-- `OPENAI_API_KEY`: optional (used for session title generation; disabled if not set)
-- `OPENAI_BASE_URL`: optional (custom OpenAI-compatible gateway)
-- `OPENAI_DEFAULT_MODEL` (default `gpt-4o-mini`)
+- `ANTHROPIC_API_KEY`: optional (used for session title generation; disabled if not set)
+- `ANTHROPIC_BASE_URL`: optional (custom Anthropic API endpoint/proxy; default `https://api.anthropic.com`)
+- `DEFAULT_MODEL` (default `claude-sonnet-4-20250514`; also used for session title generation)
 - `MAX_UPLOAD_SIZE_MB` (default `100`)
 
 Logging (shared by all three Python services):

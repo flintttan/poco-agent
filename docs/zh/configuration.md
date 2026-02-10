@@ -31,9 +31,9 @@
 - `S3_REGION`（默认 `us-east-1`；Cloudflare R2 通常建议设为 `auto`）
 - `S3_FORCE_PATH_STYLE`（默认 `true`，对 MinIO/RustFS 一般需要；Cloudflare R2 通常建议设为 `false`）
 - `S3_PRESIGN_EXPIRES`：预签名 URL 过期秒数（默认 `300`）
-- `OPENAI_API_KEY`：可选（用于会话标题自动生成等；未设置则禁用标题生成）
-- `OPENAI_BASE_URL`：可选（自定义 OpenAI 兼容网关）
-- `OPENAI_DEFAULT_MODEL`（默认 `gpt-4o-mini`）
+- `ANTHROPIC_API_KEY`：可选（用于会话标题自动生成；未设置则禁用标题生成）
+- `ANTHROPIC_BASE_URL`：可选（自定义 Anthropic API 端点/代理；默认 `https://api.anthropic.com`）
+- `DEFAULT_MODEL`（默认 `claude-sonnet-4-20250514`；会话标题生成也会使用该模型）
 - `MAX_UPLOAD_SIZE_MB`（默认 `100`）
 
 日志（3 个 Python 服务通用）：
