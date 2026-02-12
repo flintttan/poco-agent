@@ -2,7 +2,7 @@
 
 该服务用于：
 
-- 通过 IM（当前实现：Telegram / 飞书 / 钉钉）发起任务、续聊、回答 AskQuestion/Plan Approval
+- 通过 IM（当前实现：Telegram / 钉钉）发起任务、续聊、回答 AskQuestion/Plan Approval
 - 通过轮询 Backend 的公开 API 发送通知（完成/失败/需要输入）
 
 设计目标：
@@ -41,14 +41,6 @@ POLL_HTTP_TIMEOUT_SECONDS=10
 TELEGRAM_BOT_TOKEN=123:abc
 TELEGRAM_WEBHOOK_SECRET_TOKEN=
 
-# Feishu
-FEISHU_ENABLED=true
-FEISHU_APP_ID=cli_xxx
-FEISHU_APP_SECRET=xxx
-FEISHU_VERIFICATION_TOKEN=
-FEISHU_ENCRYPT_KEY=
-FEISHU_OPEN_BASE_URL=https://open.feishu.cn
-
 # DingTalk
 DINGTALK_ENABLED=true
 DINGTALK_WEBHOOK_TOKEN=
@@ -68,7 +60,6 @@ DINGTALK_WEBHOOK_URL=
 ### Webhook
 
 - Telegram: `POST /api/v1/webhooks/telegram`
-- 飞书: `POST /api/v1/webhooks/feishu`
 - 钉钉（Webhook 模式可选）：`POST /api/v1/webhooks/dingtalk`（如使用 Stream 模式则不需要配置公网回调）
 
 ### IM 命令

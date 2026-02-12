@@ -1,7 +1,6 @@
 import logging
 
 from app.services.dingtalk_client import DingTalkClient
-from app.services.feishu_client import FeishuClient
 from app.services.provider_protocol import MessageProvider
 from app.services.telegram_client import TelegramClient
 
@@ -12,7 +11,6 @@ class NotificationGateway:
     def __init__(self) -> None:
         self._providers: dict[str, MessageProvider] = {
             "telegram": TelegramClient(),
-            "feishu": FeishuClient(),
             "dingtalk": DingTalkClient(),
         }
 

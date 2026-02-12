@@ -46,19 +46,6 @@ class Settings(BaseSettings):
         default=None, alias="TELEGRAM_WEBHOOK_SECRET_TOKEN"
     )
 
-    # Feishu bot integration
-    feishu_enabled: bool = Field(default=True, alias="FEISHU_ENABLED")
-    feishu_app_id: str = Field(default="", alias="FEISHU_APP_ID")
-    feishu_app_secret: str = Field(default="", alias="FEISHU_APP_SECRET")
-    feishu_verification_token: str | None = Field(
-        default=None, alias="FEISHU_VERIFICATION_TOKEN"
-    )
-    feishu_encrypt_key: str | None = Field(default=None, alias="FEISHU_ENCRYPT_KEY")
-    feishu_open_base_url: str = Field(
-        default="https://open.feishu.cn",
-        alias="FEISHU_OPEN_BASE_URL",
-    )
-
     # DingTalk bot integration
     dingtalk_enabled: bool = Field(default=True, alias="DINGTALK_ENABLED")
     dingtalk_webhook_token: str | None = Field(
@@ -80,7 +67,6 @@ class Settings(BaseSettings):
     )
 
     # Optional outbound-only webhook integrations (notifications only)
-    feishu_webhook_url: str | None = Field(default=None, alias="FEISHU_WEBHOOK_URL")
     dingtalk_webhook_url: str | None = Field(default=None, alias="DINGTALK_WEBHOOK_URL")
 
     model_config = SettingsConfigDict(
