@@ -77,12 +77,24 @@ Start (no rustfs):
 docker compose -f docker-compose.r2.yml up -d
 ```
 
+To enable IM (Telegram/DingTalk), you must explicitly enable the profile:
+
+```bash
+docker compose -f docker-compose.r2.yml --profile im up -d im
+```
+
 ## Manual Start (local / self-hosted)
 
 Run in the repo root:
 
 ```bash
 docker compose up -d
+```
+
+To enable IM (disabled by default):
+
+```bash
+docker compose --profile im up -d im
 ```
 
 By default it pulls `backend` / `executor-manager` / `frontend` from GHCR and Postgres/RustFS images. When running tasks, `executor-manager` will start `EXECUTOR_IMAGE` dynamically (it may auto-pull if missing).
