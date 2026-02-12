@@ -19,11 +19,12 @@
 
 建议先确认你当前是 Docker 方式还是本地方式，再编辑对应文件。
 
+注意：Compose 中 IM 服务默认不启动，必须显式带 `--profile im`。
+
 ## 3. 通用环境变量
 
 ```bash
 # IM service
-IM_PORT=8002
 IM_DATABASE_URL=sqlite:///./im.db
 BACKEND_URL=http://localhost:8000
 BACKEND_USER_ID=default
@@ -37,6 +38,8 @@ POLL_SESSIONS_RECENT_INTERVAL_SECONDS=5
 POLL_SESSIONS_FULL_INTERVAL_SECONDS=300
 POLL_HTTP_TIMEOUT_SECONDS=10
 ```
+
+> Docker Compose 中 IM 端口固定映射为 `8002:8002`。
 
 ## 4. Telegram 配置
 
@@ -61,7 +64,18 @@ TELEGRAM_WEBHOOK_SECRET_TOKEN=<随机长字符串>
 
 ### 4.3 启动 IM 服务
 
-- Docker：`docker compose --profile im up -d im`
+- Docker（本地 rustfs 版本，`docker-compose.yml`）：
+
+```bash
+docker compose --profile im up -d im
+```
+
+- Docker（R2 版本，`docker-compose.r2.yml`）：
+
+```bash
+docker compose -f docker-compose.r2.yml --profile im up -d im
+```
+
 - 本地：
 
 ```bash

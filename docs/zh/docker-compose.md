@@ -78,12 +78,24 @@ S3_FORCE_PATH_STYLE=false
 docker compose -f docker-compose.r2.yml up -d
 ```
 
+如需同时启用 IM（Telegram/钉钉）服务，需要显式指定 profile：
+
+```bash
+docker compose -f docker-compose.r2.yml --profile im up -d im
+```
+
 ## 手动启动（本地开发/自部署）
 
 在仓库根目录执行：
 
 ```bash
 docker compose up -d
+```
+
+如需启用 IM（默认关闭）：
+
+```bash
+docker compose --profile im up -d im
 ```
 
 默认会从 GHCR（`ghcr.io`）拉取 `backend` / `executor-manager` / `frontend` 镜像，并拉取 Postgres/RustFS 镜像。执行任务时，`executor-manager` 会使用 `EXECUTOR_IMAGE` 动态拉起 executor 容器（本机缺镜像时会自动 pull）。

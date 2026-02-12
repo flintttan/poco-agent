@@ -183,17 +183,13 @@ services:
 
   im:
     profiles: ["im"]
-    build:
-      context: .
-      dockerfile: docker/im/Dockerfile
+    # Default to pulling from GHCR; override via IM_IMAGE if needed.
+    image: ${IM_IMAGE:-ghcr.io/poco-ai/poco-im:latest}
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_started
     environment:
-      HOST: 0.0.0.0
-      PORT: 8002
-
       DATABASE_URL: ${IM_DATABASE_URL:-sqlite:///./im.db}
       BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
       BACKEND_USER_ID: ${BACKEND_USER_ID:-default}
@@ -219,7 +215,7 @@ services:
       DINGTALK_WEBHOOK_URL: ${DINGTALK_WEBHOOK_URL:-}
 
     ports:
-      - "${IM_PORT:-8002}:8002"
+      - "8002:8002"
 
 volumes:
   postgres_data:

@@ -19,11 +19,12 @@ Environment variable source depends on your startup mode:
 
 Confirm your mode first, then edit the correct file.
 
+Note: in Compose, IM is disabled by default and must be started with `--profile im`.
+
 ## 3. Common Environment Variables
 
 ```bash
 # IM service
-IM_PORT=8002
 IM_DATABASE_URL=sqlite:///./im.db
 BACKEND_URL=http://localhost:8000
 BACKEND_USER_ID=default
@@ -37,6 +38,8 @@ POLL_SESSIONS_RECENT_INTERVAL_SECONDS=5
 POLL_SESSIONS_FULL_INTERVAL_SECONDS=300
 POLL_HTTP_TIMEOUT_SECONDS=10
 ```
+
+> In Docker Compose, IM port mapping is fixed to `8002:8002`.
 
 ## 4. Telegram Setup
 
@@ -61,7 +64,18 @@ Notes:
 
 ### 4.3 Start IM service
 
-- Docker: `docker compose --profile im up -d im`
+- Docker (local rustfs stack, `docker-compose.yml`):
+
+```bash
+docker compose --profile im up -d im
+```
+
+- Docker (R2 stack, `docker-compose.r2.yml`):
+
+```bash
+docker compose -f docker-compose.r2.yml --profile im up -d im
+```
+
 - Local:
 
 ```bash
